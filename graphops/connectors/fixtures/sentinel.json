@@ -1,0 +1,48 @@
+{
+  "value": [
+    {
+      "id": "/subscriptions/0000/incidents/1",
+      "name": "inc-1",
+      "type": "Microsoft.SecurityInsights/Incidents",
+      "properties": {
+        "title": "repeated-auth-failure",
+        "severity": "Medium",
+        "status": "Active",
+        "createdTimeUtc": "2026-10-28T09:00:00Z",
+        "incidentNumber": 1041,
+        "relatedEntities": [
+          {
+            "kind": "Ip",
+            "value": "192.0.2.133"
+          },
+          {
+            "kind": "Account",
+            "value": "support-desk"
+          }
+        ]
+      }
+    },
+    {
+      "id": "/subscriptions/0000/incidents/2",
+      "name": "inc-2",
+      "type": "Microsoft.SecurityInsights/Incidents",
+      "properties": {
+        "title": "anomalous-role-assumption",
+        "severity": "High",
+        "status": "New",
+        "createdTimeUtc": "2026-11-03T04:00:00Z",
+        "incidentNumber": 1042,
+        "relatedEntities": [
+          {
+            "kind": "Ip",
+            "value": "192.0.2.41"
+          },
+          {
+            "kind": "Account",
+            "value": "svc-deploy"
+          }
+        ]
+      }
+    }
+  ]
+}

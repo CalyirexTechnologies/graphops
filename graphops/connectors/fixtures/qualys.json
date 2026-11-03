@@ -1,0 +1,36 @@
+{
+  "HOST_LIST": [
+    {
+      "ID": 1,
+      "IP": "10.2.0.11",
+      "DNS": "storefront-web",
+      "DETECTION_LIST": [
+        {
+          "QID": 38657,
+          "CVE": "CVE-2025-9910",
+          "SEVERITY": 4,
+          "CVSS_BASE": "7.5",
+          "EXPLOIT_MATURITY": "poc",
+          "FIRST_FOUND_DATETIME": "2026-09-24T09:00:00Z",
+          "STATUS": "ACTIVE"
+        }
+      ]
+    },
+    {
+      "ID": 2,
+      "IP": "10.2.0.24",
+      "DNS": "order-service",
+      "DETECTION_LIST": [
+        {
+          "QID": 41102,
+          "CVE": "CVE-2026-0442",
+          "SEVERITY": 5,
+          "CVSS_BASE": "9.8",
+          "EXPLOIT_MATURITY": "wild",
+          "FIRST_FOUND_DATETIME": "2026-09-24T09:00:00Z",
+          "STATUS": "ACTIVE"
+        }
+      ]
+    }
+  ]
+}

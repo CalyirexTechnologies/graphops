@@ -1,0 +1,31 @@
+{
+  "value": [
+    {
+      "id": "r1",
+      "displayName": "Application Administrator",
+      "description": "Can manage all aspects of app registrations.",
+      "members": [
+        {
+          "@odata.type": "#microsoft.graph.servicePrincipal",
+          "id": "sp1",
+          "displayName": "ci-pipeline",
+          "createdDateTime": "2026-09-24T09:00:00Z"
+        }
+      ]
+    },
+    {
+      "id": "r2",
+      "displayName": "Security Reader",
+      "description": "Can read security information.",
+      "members": [
+        {
+          "@odata.type": "#microsoft.graph.user",
+          "id": "au1",
+          "userPrincipalName": "auditor@example.invalid",
+          "displayName": "Auditor",
+          "createdDateTime": "2026-09-24T09:00:00Z"
+        }
+      ]
+    }
+  ]
+}

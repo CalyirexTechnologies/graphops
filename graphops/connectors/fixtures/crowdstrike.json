@@ -1,0 +1,56 @@
+{
+  "meta": {
+    "query_time": 0.031
+  },
+  "errors": [],
+  "resources": [
+    {
+      "detection_id": "ldt:1",
+      "created_timestamp": "2026-10-28T09:00:00Z",
+      "max_severity_displayname": "High",
+      "device": {
+        "device_id": "d1",
+        "hostname": "storefront-web",
+        "platform_name": "Linux",
+        "external_ip": "198.51.100.84",
+        "local_ip": "10.2.0.11"
+      },
+      "behaviors": [
+        {
+          "behavior_id": "b1",
+          "timestamp": "2026-10-28T09:00:00Z",
+          "display_name": "SuspiciousWebShellWrite",
+          "tactic": "Persistence",
+          "technique": "Server Software Component",
+          "technique_id": "T1505.003",
+          "severity_name": "High",
+          "user_name": "www-data"
+        }
+      ]
+    },
+    {
+      "detection_id": "ldt:2",
+      "created_timestamp": "2026-11-03T04:00:00Z",
+      "max_severity_displayname": "Critical",
+      "device": {
+        "device_id": "d2",
+        "hostname": "order-service",
+        "platform_name": "Linux",
+        "external_ip": "198.51.100.21",
+        "local_ip": "10.2.0.24"
+      },
+      "behaviors": [
+        {
+          "behavior_id": "b2",
+          "timestamp": "2026-11-03T04:00:00Z",
+          "display_name": "CredentialDumpingFromMemory",
+          "tactic": "Credential Access",
+          "technique": "OS Credential Dumping",
+          "technique_id": "T1003.007",
+          "severity_name": "Critical",
+          "user_name": "finance-admin"
+        }
+      ]
+    }
+  ]
+}

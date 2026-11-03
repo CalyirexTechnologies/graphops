@@ -1,0 +1,60 @@
+{
+  "items": [
+    {
+      "sys_id": "ci1",
+      "name": "billing-database",
+      "sys_class_name": "cmdb_ci_db_instance",
+      "data_classification": "PCI",
+      "owned_by": "finance-ops",
+      "used_for": "Production"
+    },
+    {
+      "sys_id": "ci2",
+      "name": "hr-database",
+      "sys_class_name": "cmdb_ci_db_instance",
+      "data_classification": "PII",
+      "owned_by": "people-ops",
+      "used_for": "Production"
+    },
+    {
+      "sys_id": "ci3",
+      "name": "order-service",
+      "sys_class_name": "cmdb_ci_appl",
+      "data_classification": "Internal",
+      "owned_by": "commerce",
+      "used_for": "Production"
+    },
+    {
+      "sys_id": "ci4",
+      "name": "storefront-web",
+      "sys_class_name": "cmdb_ci_appl",
+      "data_classification": "Public",
+      "owned_by": "commerce",
+      "used_for": "Production"
+    },
+    {
+      "sys_id": "ci5",
+      "name": "file-store",
+      "sys_class_name": "cmdb_ci_appl",
+      "data_classification": "Internal",
+      "owned_by": "platform",
+      "used_for": "Production"
+    }
+  ],
+  "relationships": [
+    {
+      "sys_id": "rel1",
+      "parent": "ci3",
+      "child": "ci1",
+      "type": "Depends on::Used by",
+      "sys_created_on": "2026-10-28T09:00:00Z"
+    },
+    {
+      "sys_id": "rel2",
+      "parent": "ci4",
+      "child": "ci3",
+      "type": "Depends on::Used by",
+      "sys_created_on": "2026-09-24T09:00:00Z"
+    }
+  ]
+}

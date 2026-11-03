@@ -1,0 +1,116 @@
+{
+  "users": [
+    {
+      "id": "u1",
+      "status": "ACTIVE",
+      "profile": {
+        "login": "svc-deploy",
+        "email": "svc-deploy@example.invalid",
+        "firstName": "Deployment",
+        "lastName": "Service"
+      },
+      "appAssignments": [
+        {
+          "appId": "app1",
+          "scope": "GROUP",
+          "created": "2026-09-24T09:00:00Z",
+          "lastSignOn": "2026-11-03T04:00:00Z"
+        },
+        {
+          "appId": "app4",
+          "scope": "USER",
+          "created": "2026-09-24T09:00:00Z",
+          "lastSignOn": "2026-09-24T09:00:00Z"
+        }
+      ]
+    },
+    {
+      "id": "u2",
+      "status": "ACTIVE",
+      "profile": {
+        "login": "support-desk",
+        "email": "support@example.invalid",
+        "firstName": "Support",
+        "lastName": "Desk"
+      },
+      "appAssignments": [
+        {
+          "appId": "app4",
+          "scope": "USER",
+          "created": "2026-09-24T09:00:00Z",
+          "lastSignOn": "2026-09-24T09:00:00Z"
+        },
+        {
+          "appId": "app2",
+          "scope": "GROUP",
+          "created": "2026-09-24T09:00:00Z",
+          "lastSignOn": null
+        },
+        {
+          "appId": "app3",
+          "scope": "GROUP",
+          "created": "2026-09-24T09:00:00Z",
+          "lastSignOn": null
+        }
+      ]
+    },
+    {
+      "id": "u3",
+      "status": "ACTIVE",
+      "profile": {
+        "login": "svc-backup",
+        "email": "svc-backup@example.invalid",
+        "firstName": "Backup",
+        "lastName": "Service"
+      },
+      "appAssignments": [
+        {
+          "appId": "app1",
+          "scope": "USER",
+          "created": "2026-09-24T09:00:00Z",
+          "lastSignOn": "2026-09-24T09:00:00Z"
+        }
+      ]
+    },
+    {
+      "id": "u4",
+      "status": "SUSPENDED",
+      "profile": {
+        "login": "former-contractor",
+        "email": "contractor@example.invalid",
+        "firstName": "Former",
+        "lastName": "Contractor"
+      },
+      "appAssignments": [
+        {
+          "appId": "app2",
+          "scope": "USER",
+          "created": "2026-09-24T09:00:00Z",
+          "lastSignOn": null
+        }
+      ]
+    }
+  ],
+  "apps": [
+    {
+      "id": "app1",
+      "label": "s3://nightly-backups",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "app2",
+      "label": "billing-database",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "app3",
+      "label": "hr-database",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "app4",
+      "label": "iam",
+      "status": "ACTIVE"
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "Records": [
+    {
+      "eventVersion": "1.08",
+      "eventTime": "2026-11-03T04:00:00Z",
+      "eventSource": "sts.amazonaws.com",
+      "eventName": "AssumeRole",
+      "awsRegion": "ap-south-1",
+      "sourceIPAddress": "192.0.2.41",
+      "userIdentity": {
+        "type": "AssumedRole",
+        "principalId": "AROAEXAMPLE:deploy",
+        "arn": "arn:aws:sts::000000000000:assumed-role/svc-deploy",
+        "userName": "svc-deploy"
+      },
+      "resources": [],
+      "responseElements": {
+        "credentials": {}
+      }
+    },
+    {
+      "eventVersion": "1.08",
+      "eventTime": "2026-11-03T04:00:00Z",
+      "eventSource": "s3.amazonaws.com",
+      "eventName": "GetObject",
+      "awsRegion": "ap-south-1",
+      "sourceIPAddress": "192.0.2.41",
+      "userIdentity": {
+        "type": "AssumedRole",
+        "arn": "arn:aws:sts::000000000000:assumed-role/svc-deploy",
+        "userName": "svc-deploy"
+      },
+      "resources": [
+        {
+          "ARN": "arn:aws:s3:::nightly-backups",
+          "type": "AWS::S3::Object"
+        }
+      ]
+    },
+    {
+      "eventVersion": "1.08",
+      "eventTime": "2026-09-24T09:00:00Z",
+      "eventSource": "s3.amazonaws.com",
+      "eventName": "GetObject",
+      "awsRegion": "ap-south-1",
+      "sourceIPAddress": "s3.amazonaws.com",
+      "userIdentity": {
+        "type": "AssumedRole",
+        "arn": "arn:aws:sts::000000000000:assumed-role/svc-backup",
+        "userName": "svc-backup"
+      },
+      "resources": [
+        {
+          "ARN": "arn:aws:s3:::nightly-backups",
+          "type": "AWS::S3::Object"
+        }
+      ]
+    }
+  ]
+}
