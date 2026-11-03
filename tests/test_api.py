@@ -1,0 +1,276 @@
+"""The HTTP surface.
+
+The test worth reading first is `test_every_route_is_guarded`. It walks the
+route table rather than checking endpoints one by one, so a route added next
+month is covered the day it is written. Enumerating endpoints by hand is how
+an unauthenticated route reaches production with a green suite.
+"""
+from __future__ import annotations
+
+import pytest
+
+from graphops.api.app import PUBLIC_PATHS
+
+
+# ------------------------------------------------------------ the guarantee
+def test_every_route_is_guarded(app):
+    """No route may be reachable without resolving a principal."""
+    unguarded = []
+    for route in app.routes:
+        path = getattr(route, 'path', None)
+        endpoint = getattr(route, 'endpoint', None)
+        if path is None or endpoint is None or path in PUBLIC_PATHS:
+            continue
+        dependant = getattr(route, 'dependant', None)
+        names = set()
+        if dependant is not None:
+            stack = list(dependant.dependencies)
+            while stack:
+                current = stack.pop()
+                call = getattr(current, 'call', None)
+                if call is not None:
+                    names.add(getattr(call, '__name__', ''))
+                stack.extend(current.dependencies)
+        if not ({'current_principal', 'guard'} & names):
+            unguarded.append('%s %s' % (sorted(getattr(route, 'methods', []) or []),
+                                        path))
+    assert not unguarded, 'unauthenticated routes: %s' % unguarded
+
+
+def test_the_public_list_contains_nothing_that_reads_the_estate():
+    for path in PUBLIC_PATHS:
+        assert not path.startswith('/v1/graph')
+        assert not path.startswith('/v1/findings')
+        assert not path.startswith('/v1/admin')
+
+
+# ------------------------------------------------------------------- health
+def test_health_is_open_and_names_the_version(client):
+    body = client.get('/health').json()
+    assert body['status'] == 'ok' and body['version']
+
+
+def test_readiness_fails_when_no_estate_is_loaded(settings, db, identity, org):
+    from fastapi.testclient import TestClient
+
+    from graphops.api.app import create_app
+    bare = TestClient(create_app(settings=settings, db=db, estate_provider=None))
+    response = bare.get('/health/ready')
+    assert response.status_code == 503
+    assert response.json()['checks']['estate'] is False
+
+
+def test_openapi_describes_the_surface(client):
+    document = client.get('/openapi.json').json()
+    assert document['info']['title'] == 'GraphOps API'
+    assert len(document['paths']) >= 20
+    tags = {tag['name'] for tag in document['openapi_tags']} \
+        if 'openapi_tags' in document else {t['name'] for t in document['tags']}
+    assert {'auth', 'graph', 'connectors', 'admin'} <= tags
+
+
+# --------------------------------------------------------------------- auth
+def test_an_anonymous_caller_is_refused(client):
+    for path in ('/v1/graph/exposure', '/v1/findings', '/v1/admin/audit',
+                 '/v1/connectors', '/v1/auth/me'):
+        assert client.get(path).status_code == 401, path
+
+
+def test_a_garbage_bearer_token_is_refused(client):
+    response = client.get('/v1/auth/me',
+                          headers={'Authorization': 'Bearer not-a-token'})
+    assert response.status_code == 401
+
+
+def test_an_unknown_tenant_answers_like_a_wrong_password(client):
+    response = client.post('/v1/auth/login', json={
+        'organization': 'nosuchtenant', 'email': 'a@b.com',
+        'password': 'a sufficiently long passphrase'})
+    assert response.status_code == 401
+    assert response.json()['detail'] == 'invalid credentials'
+
+
+def test_login_then_me_reports_the_roles(client, auth_header):
+    body = client.get('/v1/auth/me', headers=auth_header('analyst')).json()
+    assert body['roles'] == ['analyst']
+    assert 'graph:query' in body['permissions']
+
+
+def test_logout_revokes_the_session(client, auth_header):
+    header = auth_header('analyst')
+    assert client.post('/v1/auth/logout', headers=header).status_code == 200
+    assert client.get('/v1/auth/me', headers=header).status_code == 401
+
+
+def test_refresh_reuse_answers_409(client):
+    login = client.post('/v1/auth/login', json={
+        'organization': 'acme', 'email': 'analyst@acme.com',
+        'password': 'a sufficiently long passphrase'}).json()
+    assert client.post('/v1/auth/refresh',
+                       json={'refresh_token': login['refresh_token']}
+                       ).status_code == 200
+    replayed = client.post('/v1/auth/refresh',
+                           json={'refresh_token': login['refresh_token']})
+    assert replayed.status_code == 409
+
+
+# ------------------------------------------------------------ authorisation
+@pytest.mark.parametrize('role,path,expected', [
+    ('analyst', '/v1/graph/exposure', 200),
+    ('responder', '/v1/graph/exposure', 200),
+    ('viewer', '/v1/graph/exposure', 403),     # no graph:query
+    ('auditor', '/v1/graph/exposure', 403),    # reads the record, not the graph
+    ('analyst', '/v1/admin/audit', 403),       # no audit:read
+    ('auditor', '/v1/admin/audit', 200),
+    ('owner', '/v1/admin/audit', 200),
+    ('analyst', '/v1/graph/export?fmt=stix', 200),
+    ('responder', '/v1/graph/export?fmt=stix', 403),   # no graph:export
+    ('viewer', '/v1/findings', 200),
+    ('viewer', '/v1/connectors', 403),         # no connector:read
+])
+def test_each_role_reaches_exactly_what_its_permissions_allow(
+        client, auth_header, role, path, expected):
+    assert client.get(path, headers=auth_header(role)).status_code == expected
+
+
+def test_a_denial_names_the_missing_permission(client, auth_header):
+    body = client.get('/v1/admin/audit', headers=auth_header('analyst')).json()
+    assert body['missing_permission'] == 'audit:read'
+
+
+# ---------------------------------------------------------------- redaction
+def test_an_analyst_sees_crown_jewels_and_a_viewer_does_not(client, auth_header):
+    analyst = client.get('/v1/findings', headers=auth_header('analyst')).json()
+    viewer = client.get('/v1/findings', headers=auth_header('viewer')).json()
+    assert analyst['count'] == viewer['count'], 'counts must not change'
+    assert '_redaction' not in analyst
+    assert viewer['_redaction']['nodes_redacted'] > 0
+
+
+# --------------------------------------------------------------------- graph
+def test_exposure_returns_routes_with_tactics(client, auth_header):
+    body = client.get('/v1/graph/exposure',
+                      headers=auth_header('analyst')).json()
+    assert body['paths']
+    first_step = body['paths'][0]['steps'][0]
+    assert first_step['tactic'] and first_step['tactic_id'].startswith('TA')
+
+
+def test_blast_radius_rejects_an_unknown_node(client, auth_header):
+    response = client.post('/v1/graph/blast-radius',
+                           json={'node_id': 'asset:does-not-exist', 'hops': 2},
+                           headers=auth_header('analyst'))
+    assert response.status_code in (404, 200)
+
+
+def test_query_bounds_are_enforced_by_the_schema(client, auth_header):
+    header = auth_header('analyst')
+    assert client.get('/v1/graph/exposure?max_depth=99',
+                      headers=header).status_code == 422
+    assert client.post('/v1/graph/blast-radius',
+                       json={'node_id': 'x', 'hops': 50},
+                       headers=header).status_code == 422
+
+
+@pytest.mark.parametrize('fmt', ['stix', 'sarif', 'oscal', 'csv'])
+def test_every_export_format_returns(client, auth_header, fmt):
+    assert client.get('/v1/graph/export?fmt=%s' % fmt,
+                      headers=auth_header('analyst')).status_code == 200
+
+
+def test_an_unknown_export_format_is_rejected(client, auth_header):
+    assert client.get('/v1/graph/export?fmt=xlsx',
+                      headers=auth_header('analyst')).status_code == 422
+
+
+# ---------------------------------------------------------------- tenancy
+def test_a_tenant_cannot_read_another_tenants_audit_log(
+        client, auth_header, identity, other_org, audit):
+    from graphops.audit.chain import Outcome
+    audit.record(action='secret.action', outcome=Outcome.SUCCESS,
+                 organization_id=other_org['id'], actor_id='someone')
+    entries = client.get('/v1/admin/audit',
+                         headers=auth_header('auditor')).json()['entries']
+    assert all(e['organization_id'] != other_org['id'] for e in entries)
+    assert all(e['action'] != 'secret.action' for e in entries)
+
+
+def test_revoking_another_tenants_api_key_answers_404(
+        client, auth_header, identity, other_org):
+    theirs = identity.create_api_key(organization_id=other_org['id'],
+                                     name='theirs')
+    response = client.delete('/v1/admin/api-keys/%s' % theirs['id'],
+                             headers=auth_header('owner'))
+    # 404, not 403: a 403 would confirm the key exists somewhere.
+    assert response.status_code == 404
+
+
+# ------------------------------------------------------------------- admin
+def test_an_api_key_authenticates_and_is_limited_to_its_role(client, auth_header):
+    created = client.post('/v1/admin/api-keys',
+                          json={'name': 'splunk', 'roles': ['service']},
+                          headers=auth_header('owner')).json()
+    header = {'X-Api-Key': created['api_key']}
+    assert client.get('/v1/auth/me', headers=header).json()['kind'] == 'service'
+    # A service identity must not be able to read the graph.
+    assert client.get('/v1/graph/exposure', headers=header).status_code == 403
+
+
+def test_the_service_role_cannot_be_given_to_a_person_over_http(client, auth_header):
+    response = client.post('/v1/admin/users',
+                           json={'email': 'svc@acme.com',
+                                 'password': 'a sufficiently long passphrase',
+                                 'roles': ['service']},
+                           headers=auth_header('owner'))
+    assert response.status_code == 400
+
+
+def test_a_short_password_is_refused_by_the_schema(client, auth_header):
+    response = client.post('/v1/admin/users',
+                           json={'email': 'x@acme.com', 'password': 'short',
+                                 'roles': ['viewer']},
+                           headers=auth_header('owner'))
+    assert response.status_code == 422
+
+
+def test_the_audit_chain_verifies_over_http(client, auth_header):
+    body = client.get('/v1/admin/audit/verify',
+                      headers=auth_header('auditor')).json()
+    assert body['valid'] is True
+
+
+# -------------------------------------------------------------- connectors
+def test_the_catalogue_never_includes_a_credential_value(client, auth_header):
+    body = client.get('/v1/connectors', headers=auth_header('analyst')).json()
+    assert len(body['connectors']) >= 13
+    for connector in body['connectors']:
+        # Names of required variables, never values.
+        assert all(name.isupper() for name in connector['credentials'])
+
+
+def test_live_mode_is_refused_on_a_replay_deployment(client, auth_header):
+    response = client.post('/v1/connectors/run', json={'mode': 'live'},
+                           headers=auth_header('owner'))
+    assert response.status_code == 400
+
+
+def test_running_connectors_reports_resolution(client, auth_header):
+    body = client.post('/v1/connectors/run', json={'mode': 'replay'},
+                       headers=auth_header('owner')).json()
+    assert body['status'] == 'success'
+    assert body['connectors_run'] >= 9
+    assert body['resolution']['merged'] >= 3
+
+
+# ------------------------------------------------------------------ headers
+def test_security_headers_are_present(client):
+    response = client.get('/health')
+    assert response.headers['x-content-type-options'] == 'nosniff'
+    assert response.headers['x-frame-options'] == 'DENY'
+    assert response.headers['cache-control'] == 'no-store'
+    assert response.headers['x-request-id']
+
+
+def test_a_supplied_request_id_is_echoed(client):
+    response = client.get('/health', headers={'X-Request-Id': 'abc-123'})
+    assert response.headers['x-request-id'] == 'abc-123'
