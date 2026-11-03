@@ -1,0 +1,93 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "graphops"
+version = "1.0.0"
+description = "Security telemetry as a graph: attack paths, blast radius, structural anomalies and standing access."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+keywords = ["security", "graph", "attack-path", "neo4j", "soc", "zero-trust"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Information Technology",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Security",
+]
+
+# The engine and every connector run on the standard library alone. That is a
+# deliberate property, not an accident: `python3 -m graphops.demo` works on a
+# machine with no network and no package manager, which is how a reviewer
+# sees it work before deciding whether to install anything.
+dependencies = []
+
+[project.optional-dependencies]
+api = ["fastapi>=0.110", "uvicorn[standard]>=0.27", "pydantic>=2.6"]
+neo4j = ["neo4j>=5.17"]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=4.1",
+    "httpx>=0.27",
+    "ruff>=0.3",
+]
+
+[project.scripts]
+graphops = "graphops.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["graphops*"]
+
+[tool.setuptools.package-data]
+"graphops.connectors" = ["fixtures/*.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# -q for signal, --strict-markers so a typo in a marker fails rather than
+# silently skipping the test it was meant to select.
+addopts = "-q --strict-markers"
+filterwarnings = [
+    "error::DeprecationWarning:graphops.*",
+]
+
+[tool.coverage.run]
+source = ["graphops"]
+omit = ["graphops/demo*.py", "graphops/connectors/make_fixtures.py"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+]
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "B", "S", "I", "UP"]
+ignore = [
+    # Asserts are the point in a test suite.
+    "S101",
+    # Line length is a formatter's job, not a linter's.
+    "E501",
+    # printf-style formatting. This codebase uses it consistently, and
+    # consistency is worth more here than the marginal readability of
+    # f-strings: these strings are mostly log lines and error messages where
+    # the lazy-evaluation of %-args is the behaviour that is wanted.
+    "UP031",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S105", "S106"]
+# The fixtures deliberately contain documentation-range addresses and
+# invented tokens; flagging them as hardcoded secrets is a false positive.
+"graphops/connectors/make_fixtures.py" = ["S105", "S106"]
+# B008 forbids a function call in a default argument. FastAPI's whole
+# dependency system is `param: X = Depends(y)`, so the rule and the framework
+# are in direct conflict and the framework wins inside the API package.
+"graphops/api/*" = ["B008"]
+"graphops/api/routes/*" = ["B008"]

@@ -1,0 +1,159 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # The engine and the connectors must keep working with nothing installed.
+  # Running this separately from the full suite is the only way that claim
+  # stays true: in a job that has pip-installed fastapi, an accidental import
+  # of it from the engine would never be noticed.
+  no-dependencies:
+    name: Runs with no dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Engine demo, standard library only
+        run: python3 -m graphops.demo
+      - name: Connector ingest, standard library only
+        run: python3 -m graphops.cli ingest
+      - name: Assert nothing third-party was imported
+        run: |
+          python3 - <<'PY'
+          import sys
+
+          # Snapshot first, then import, then diff. Scanning sys.modules
+          # wholesale instead would flag whatever the interpreter injected at
+          # startup (sitecustomize, apport hooks, distutils shims) and fail
+          # for reasons that have nothing to do with this codebase.
+          before = set(sys.modules)
+          import graphops.analysis            # noqa: F401
+          import graphops.cli                 # noqa: F401
+          import graphops.connectors.registry  # noqa: F401
+          pulled_in = set(sys.modules) - before
+
+          stdlib = set(sys.stdlib_module_names)
+          offenders = sorted({
+              name.split('.')[0] for name in pulled_in
+              if name.split('.')[0] not in stdlib
+              and not name.startswith('graphops')
+              and not name.startswith('_')
+          })
+          if offenders:
+              raise SystemExit('third-party imports in the core: %s' % offenders)
+          print('core pulled in %d modules, all standard library'
+                % len(pulled_in))
+          PY
+
+  test:
+    name: Tests on ${{ matrix.python }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.10', '3.11', '3.12']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+      - run: pip install -e '.[api,dev]'
+      - name: Test suite
+        env:
+          GRAPHOPS_SIGNING_KEY: ci-signing-key-not-used-anywhere-else-000
+        run: pytest --cov=graphops --cov-report=term-missing --cov-fail-under=70
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install ruff
+      - run: ruff check graphops tests
+
+  fixtures:
+    name: Fixtures match their generator
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      # A fixture edited by hand and not reflected in the generator is a
+      # fixture nobody can regenerate. Regenerate and diff.
+      - run: python3 -m graphops.connectors.make_fixtures
+      - run: git diff --exit-code graphops/connectors/fixtures/
+
+  no-secrets:
+    name: No credentials committed
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Scan for real-looking credentials
+        run: |
+          python3 - <<'PY'
+          import pathlib
+          import re
+          # Patterns for credentials that would be real if present. The
+          # fixtures contain invented values by design, so the test is for
+          # shapes that only real secrets take.
+          patterns = {
+              'AWS access key': r'AKIA[0-9A-Z]{16}',
+              'GitHub token': r'gh[pousr]_[A-Za-z0-9]{36}',
+              'Slack token': r'xox[baprs]-[0-9A-Za-z-]{10,}',
+              'private key block': r'-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----',
+              'Stripe live key': r'sk_live_[0-9A-Za-z]{16,}',
+          }
+          bad = []
+          for path in pathlib.Path('.').rglob('*'):
+              if not path.is_file() or '.git/' in str(path):
+                  continue
+              try:
+                  text = path.read_text(encoding='utf-8', errors='ignore')
+              except OSError:
+                  continue
+              for label, pattern in patterns.items():
+                  if re.search(pattern, text):
+                      bad.append('%s in %s' % (label, path))
+          if bad:
+              raise SystemExit('\n'.join(bad))
+          print('no credential-shaped strings found')
+          PY
+
+  docker:
+    name: Image builds and the API answers
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t graphops:ci .
+      - name: Start it and check readiness
+        run: |
+          docker run -d --name graphops \
+            -e GRAPHOPS_SIGNING_KEY=ci-signing-key-not-used-anywhere-else-000 \
+            -p 8000:8000 graphops:ci
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8000/health >/dev/null 2>&1; then
+              echo "healthy after ${attempt}s"
+              curl -fsS http://127.0.0.1:8000/health
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "never became healthy"; docker logs graphops; exit 1
