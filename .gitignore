@@ -1,0 +1,37 @@
+# Virtualenvs and build output
+.venv/
+venv/
+build/
+dist/
+*.egg-info/
+__pycache__/
+*.py[cod]
+
+# Test and coverage output
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+.ruff_cache/
+
+# Runtime data. The database holds tenant records and must never be committed.
+data/graphops.db
+data/graphops.db-wal
+data/graphops.db-shm
+*.sqlite3
+
+# Secrets. .env.example is committed; .env is not.
+.env
+.env.*
+!.env.example
+
+# Submission artifacts, built from this repo rather than stored in it
+*.pdf
+*.zip
+*.mp4
+shots/
+video/
+.playwright-mcp/
+
+# macOS
+.DS_Store
