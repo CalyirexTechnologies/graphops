@@ -362,20 +362,26 @@ Cheapest route to regulated data, effort 2.0
       <p style="margin-top:4mm">So <code>crown:reveal</code> is a permission
       of its own. Everything else in a security product is read-or-write;
       this one splits reading a path from reading what sits at the end of
-      it.</p>
-      <pre>analyst  192.0.2.41 -> svc-deploy
-         -> s3://nightly-backups
+      it. An auditor runs the same query and gets the same three routes.</p>
+      <pre>GET /v1/graph/exposure
 
-viewer   192.0.2.41 -> svc-deploy
-         -> crown-jewel-748a9f6a
+analyst  2.0  192.0.2.41 -> svc-deploy
+              -> s3://nightly-backups
+         3.0  192.0.2.133 -> support-desk
+              -> billing-database
 
-         _redaction:
-           nodes_redacted: 3
-           unlocked_by: crown:reveal</pre>
-      <p style="margin-top:3mm">Pseudonymised rather than blanked, stable per
-      tenant, HMAC-derived. <strong>Counts are never redacted</strong>, because
-      "three routes reach regulated data" is the number a viewer is there
-      for.</p>
+auditor  2.0  192.0.2.41 -> svc-deploy
+              -> crown-jewel-eb76b2a3
+         3.0  192.0.2.133 -> support-desk
+              -> crown-jewel-68c61f06
+
+         nodes_redacted: 4
+         unlocked_by: crown:reveal</pre>
+      <p style="margin-top:3mm">Same route count, same hop count, same ATT&amp;CK
+      tactic on every step. Only the identity at the end is withheld.
+      Pseudonymised rather than blanked, stable per tenant and HMAC-derived,
+      so a trend is still followable. <strong>Counts are never
+      redacted.</strong></p>
     </div>
     <div>
       <h3>The rest of the platform</h3>
@@ -395,7 +401,7 @@ viewer   192.0.2.41 -> svc-deploy
         not-assessed: the graph can prove a control is contradicted, not that
         one operates.</li>
       </ul>
-      <p style="margin-top:4mm"><strong>151 tests, 76% coverage.</strong> The
+      <p style="margin-top:4mm"><strong>153 tests, 76% coverage.</strong> The
       security ones are named after the attack they prevent, so a regression
       reads as "alg none accepted" rather than "assertion failed".</p>
     </div>

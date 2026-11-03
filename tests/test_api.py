@@ -119,7 +119,9 @@ def test_refresh_reuse_answers_409(client):
     ('analyst', '/v1/graph/exposure', 200),
     ('responder', '/v1/graph/exposure', 200),
     ('viewer', '/v1/graph/exposure', 403),     # no graph:query
-    ('auditor', '/v1/graph/exposure', 403),    # reads the record, not the graph
+    # An auditor may run the path search. What they may not do is see what
+    # sits at the end of it, which is the next test.
+    ('auditor', '/v1/graph/exposure', 200),
     ('analyst', '/v1/admin/audit', 403),       # no audit:read
     ('auditor', '/v1/admin/audit', 200),
     ('owner', '/v1/admin/audit', 200),
@@ -145,6 +147,53 @@ def test_an_analyst_sees_crown_jewels_and_a_viewer_does_not(client, auth_header)
     assert analyst['count'] == viewer['count'], 'counts must not change'
     assert '_redaction' not in analyst
     assert viewer['_redaction']['nodes_redacted'] > 0
+
+
+def test_an_auditor_reviews_routes_without_learning_the_targets(client, auth_header):
+    """The pair that makes crown:reveal worth having as its own permission.
+
+    An auditor confirming attack paths are being reviewed runs the same
+    query an analyst runs and gets the same count of routes, with the final
+    node of each pseudonymised. If no role could do that, the permission
+    would be decorative.
+    """
+    analyst = client.get('/v1/graph/exposure',
+                         headers=auth_header('analyst')).json()
+    auditor = client.get('/v1/graph/exposure',
+                         headers=auth_header('auditor')).json()
+
+    assert len(auditor['paths']) == len(analyst['paths']) > 0
+    assert '_redaction' not in analyst
+    assert auditor['_redaction']['nodes_redacted'] > 0
+    assert auditor['_redaction']['unlocked_by'] == 'crown:reveal'
+
+    analyst_targets = [p['steps'][-1]['to']['key'] for p in analyst['paths']]
+    auditor_targets = [p['steps'][-1]['to']['key'] for p in auditor['paths']]
+    assert all(t.startswith('crown-jewel-') for t in auditor_targets)
+    assert not set(auditor_targets) & set(analyst_targets)
+
+    # The route itself is intact: same hop count, same tactics. Only the
+    # identity at the end is withheld.
+    assert ([len(p['steps']) for p in auditor['paths']]
+            == [len(p['steps']) for p in analyst['paths']])
+    assert all(step['tactic'] for p in auditor['paths'] for step in p['steps'])
+
+
+def test_the_crown_reveal_permission_is_load_bearing():
+    """At least one role must be able to query paths without revealing them.
+
+    If the two permission sets are identical, crown:reveal changes nothing on
+    the graph endpoints and the split is decoration. That was the case until
+    the auditor was given graph:query.
+    """
+    from graphops.rbac.permissions import ROLE_PERMISSIONS, Permission
+    can_query = {role for role, granted in ROLE_PERMISSIONS.items()
+                 if Permission.GRAPH_QUERY in granted}
+    can_reveal = {role for role, granted in ROLE_PERMISSIONS.items()
+                  if Permission.CROWN_REVEAL in granted}
+    assert can_query - can_reveal, (
+        'no role can run a path query without seeing the targets, so '
+        'crown:reveal does nothing on /v1/graph')
 
 
 # --------------------------------------------------------------------- graph

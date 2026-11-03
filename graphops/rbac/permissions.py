@@ -104,7 +104,14 @@ ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
     # the end of a path. Checking that the process runs does not require
     # knowing which system holds the card data.
     Role.AUDITOR: frozenset({
-        P.GRAPH_READ, P.FINDING_READ, P.AUDIT_READ,
+        # GRAPH_QUERY without CROWN_REVEAL is the entire point of this role,
+        # and the pair is what makes CROWN_REVEAL load-bearing rather than
+        # decorative. Without the query permission an auditor cannot run the
+        # path search at all, so the redaction never applies to a route and
+        # the separate permission buys nothing on /v1/graph. That was true
+        # here until filming a demo of it showed the auditor getting a 403.
+        P.GRAPH_READ, P.GRAPH_QUERY,
+        P.FINDING_READ, P.AUDIT_READ,
         P.COMPLIANCE_READ, P.ORG_READ, P.USER_READ, P.CONNECTOR_READ,
     }),
     # Dashboard access. Counts and shapes, no identities.
