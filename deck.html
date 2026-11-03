@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>GraphOps</title>
+<style>
+  @page { size: A4 landscape; margin: 13mm 15mm; }
+  :root {
+    --ink: #14181d; --dim: #5b6672; --faint: #93a0ad;
+    --line: #dfe4ea; --hot: #d1491f; --crown: #2f7d44;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font: 11pt/1.5 ui-sans-serif, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--ink); background: #fff;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  /* 180mm, not the 184mm content box. Chrome rounds the fragmentainer and
+     spills a blank page at the exact height. */
+  .slide { height: 180mm; page-break-after: always; break-after: page;
+           display: flex; flex-direction: column; }
+  .slide:last-child { page-break-after: auto; break-after: auto; }
+  h1 { font-size: 29pt; line-height: 1.12; margin: 0 0 7mm; letter-spacing: -0.02em; font-weight: 680; }
+  h2 { font-size: 18.5pt; line-height: 1.2; margin: 0 0 3mm; letter-spacing: -0.015em; font-weight: 650; }
+  h3 { font-size: 11.5pt; margin: 0 0 2.5mm; font-weight: 650; }
+  .kicker { font-size: 9pt; letter-spacing: 0.14em; text-transform: uppercase; color: var(--hot); font-weight: 650; margin-bottom: 3.5mm; }
+  .lede { font-size: 12.5pt; line-height: 1.45; color: var(--dim); max-width: 168mm; }
+  p { margin: 0 0 3mm; }
+  .body { flex: 1; }
+  ul { margin: 0; padding-left: 5mm; }
+  li { margin-bottom: 2.2mm; }
+  .foot { margin-top: auto; border-top: 1px solid var(--line); padding-top: 2.5mm;
+          font-size: 8pt; color: var(--faint); display: flex; justify-content: space-between; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 9mm; align-content: start; }
+  .cols.wide { grid-template-columns: 0.92fr 1.35fr; }
+  .num { font-size: 32pt; font-weight: 680; letter-spacing: -0.03em; line-height: 1; }
+  .num small { display: block; font-size: 9.5pt; font-weight: 400; color: var(--dim); letter-spacing: 0; margin-top: 2mm; line-height: 1.4; }
+  .stats { display: flex; gap: 12mm; margin: 4mm 0 5mm; }
+  figure { margin: 0; }
+  figure img { width: 100%; border: 1px solid var(--line); border-radius: 2mm; display: block; }
+  figcaption { font-size: 8.5pt; color: var(--faint); margin-top: 2mm; }
+  table { border-collapse: collapse; width: 100%; font-size: 9.5pt; }
+  th, td { text-align: left; padding: 2mm 3mm; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 8.5pt; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); font-weight: 600; }
+  td.r, th.r { text-align: right; }
+  .hot { color: var(--hot); font-weight: 600; }
+  .crown { color: var(--crown); font-weight: 600; }
+  code { font: 9pt ui-monospace, SFMono-Regular, Menlo, monospace; background: #f4f6f8; padding: 0.4mm 1.2mm; border-radius: 1mm; }
+  pre { font: 8.5pt/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; background: #f4f6f8;
+        padding: 3mm 4mm; border-radius: 2mm; margin: 0; overflow: hidden; }
+  .cover { justify-content: center; }
+  .rule { width: 18mm; height: 2.4pt; background: var(--hot); margin-bottom: 7mm; }
+</style>
+</head>
+<body>
+
+<!-- 1 -->
+<section class="slide cover">
+  <div class="rule"></div>
+  <h1>GraphOps</h1>
+  <p class="lede">An estate read as a graph, so a security team can hunt
+  before an incident instead of reconstructing one afterwards. It answers
+  which routes run from the internet to something worth stealing, what is in
+  reach the moment a system is taken, and which routes are new even when
+  every single step on them looks ordinary.</p>
+  <p class="lede" style="margin-top:5mm"><strong>It runs two ways over the
+  same graph</strong>, in memory with no dependencies, and in Neo4j with
+  plain Cypher. Both are checked against each other on every run.</p>
+  <div class="foot"><span>hackFront India, Cybersecurity, Neo4j Track</span><span>1</span></div>
+</section>
+
+<!-- 2 -->
+<section class="slide">
+  <div class="kicker">The problem</div>
+  <h2>Alerts arrive disconnected, and the joins are the reason</h2>
+  <div class="body">
+    <p class="lede" style="margin-bottom:5mm">When an attacker takes a
+    low-privilege endpoint and moves sideways, that shows up as many separate
+    alerts. An analyst then spends hours putting the chain back together by
+    hand.</p>
+    <p>A relational store needs a chain of joins to trace one multi-hop
+    relationship such as an identity using an address, which reaches a
+    service, which holds data. A graph holds that same chain as a path and
+    walks it directly. That is why the four questions below are all one
+    traversal each rather than four reporting pipelines.</p>
+    <p style="margin-top:4mm">Most teams also cannot answer the first
+    question anyone asks during a live incident, which is what the blast
+    radius is right now and which critical systems sit on the attacker's
+    direct path from here.</p>
+    <table style="margin-top:5mm">
+      <tr><th>What the brief asks for</th><th>Where it is in this build</th></tr>
+      <tr><td>A knowledge graph from security telemetry</td><td><code>vocab.py</code>, 7 node kinds and 7 edge kinds</td></tr>
+      <tr><td>Attack paths modelled before they are used, with choke points</td><td>slides 4 and 5</td></tr>
+      <tr><td>Blast radius at one, two and three hops</td><td>slide 6</td></tr>
+      <tr><td>Anomalies from structure rather than static rules</td><td>slide 7</td></tr>
+      <tr><td>Zero trust, access used against access entitled</td><td>slide 8</td></tr>
+    </table>
+  </div>
+  <div class="foot"><span>GraphOps</span><span>2</span></div>
+</section>
+
+<!-- 3 -->
+<section class="slide">
+  <div class="kicker">The model</div>
+  <h2>Every edge points the way an attacker travels</h2>
+  <div class="body cols wide">
+    <div>
+      <p>Nodes are what telemetry already names, which is addresses,
+      identities, endpoints, systems, cloud services, weaknesses and the
+      rules that fired. Edges are what happened between them.</p>
+      <p>Direction is the decision that matters most. A cloud trail records
+      that an identity acted <em>from</em> an address. An attacker who holds
+      the address gains the use of the identity, so the edge is stored
+      address to identity. Stored the way the log reads, every path search
+      stops dead at the first address, which is what happened the first time
+      this was written.</p>
+      <p>Each edge kind carries its MITRE ATT&amp;CK tactic, so a path reads
+      as a kill chain rather than a list of names. The mapping is per edge
+      kind, not per event, and a kind that cannot be mapped honestly carries
+      nothing rather than something plausible.</p>
+      <p>Trust zones run left to right. Without them every node looks equally
+      important.</p>
+    </div>
+    <figure>
+      <img src="shots/exposure.png" alt="The estate graph laid out by trust zone">
+      <figcaption>A synthetic business, 27 entities and 42 relationships. The
+      company is invented and the addresses come from the RFC 5737
+      documentation ranges, so they route nowhere.</figcaption>
+    </figure>
+  </div>
+  <div class="foot"><span>GraphOps</span><span>3</span></div>
+</section>
+
+<!-- 4 -->
+<section class="slide">
+  <div class="kicker">Attack paths</div>
+  <h2>The cheapest way in is not the shortest</h2>
+  <div class="body">
+    <div class="stats">
+      <div class="num">12<small>routes from the internet<br>to a crown jewel</small></div>
+      <div class="num">2<small>hops, every single<br>one of them</small></div>
+      <div class="num hot">2.0 to 5.0<small>attacker effort across<br>those same routes</small></div>
+    </div>
+    <p>Because every route is the same length, hop count ranks them
+    identically and tells a defender nothing. Weighting each step by what it
+    costs an attacker separates them at once.</p>
+    <table style="margin-top:3mm">
+      <tr><th>Route</th><th class="r">Hops</th><th class="r">Effort</th></tr>
+      <tr><td><code>192.0.2.133</code> to <code>support-desk</code> to
+        <span class="crown">billing-database</span>
+        <span class="hot">(a grant nobody has ever used)</span></td><td class="r">2</td><td class="r hot">2.0</td></tr>
+      <tr><td><code>203.0.113.77</code> to <code>finance-admin</code> to
+        <span class="crown">hr-database</span></td><td class="r">2</td><td class="r">3.0</td></tr>
+      <tr><td><code>198.51.100.21</code> to <code>/api/orders</code> to
+        <span class="crown">billing-database</span></td><td class="r">2</td><td class="r">5.0</td></tr>
+    </table>
+    <p style="margin-top:3.5mm">Reusing a credential is cheaper than landing
+    an exploit, so the easiest way into this business is a dormant permission
+    rather than a CVE. Ranking by hops would have buried it among eleven
+    others. BloodHound CE paths on unweighted hops, which is why community
+    tools exist to put the weights back.</p>
+  </div>
+  <div class="foot"><span>GraphOps</span><span>4</span></div>
+</section>
+
+<!-- 5 -->
+<section class="slide">
+  <div class="kicker">Choke points</div>
+  <h2>Five of the twelve routes cross one endpoint</h2>
+  <div class="body cols wide">
+    <div>
+      <p>A choke point is where validated routes converge. Closing
+      <code>/api/orders</code> removes more ways in than patching any single
+      weakness on this estate does.</p>
+      <p>It is counted over the enumerated routes rather than as betweenness
+      centrality. Betweenness scores a node against all shortest paths in the
+      graph, most of which start and end somewhere nobody cares about. The
+      number a defender can act on is "this is on five of the twelve ways
+      in", and that is a count.</p>
+      <p>PageRank is run separately and independently agrees, putting
+      <code>/api/orders</code> top of the systems we actually control.
+      External addresses are excluded from that ranking, because there is
+      nothing to harden about an address that is already hostile.</p>
+    </div>
+    <div>
+      <table>
+        <tr><th>Choke point</th><th class="r">Routes</th><th class="r">Share</th></tr>
+        <tr><td><code>/api/orders</code></td><td class="r">5 of 12</td><td class="r hot">42%</td></tr>
+        <tr><td><code>/admin</code></td><td class="r">3 of 12</td><td class="r">25%</td></tr>
+        <tr><td><code>support-desk</code></td><td class="r">2 of 12</td><td class="r">17%</td></tr>
+        <tr><td><code>finance-admin</code></td><td class="r">1 of 12</td><td class="r">8%</td></tr>
+      </table>
+      <p style="margin-top:4mm; font-size:10pt; color:var(--dim)">Louvain
+      community detection splits the estate into six segments. Two of them
+      contain activity from the last day, and one of those two holds the
+      nightly backups, which is how an analyst learns <em>which part</em> of
+      the business is moving rather than reading node names.</p>
+    </div>
+  </div>
+  <div class="foot"><span>GraphOps</span><span>5</span></div>
+</section>
+
+<!-- 6 -->
+<section class="slide">
+  <div class="kicker">Blast radius</div>
+  <h2>During an incident the question changes</h2>
+  <div class="body cols wide">
+    <div>
+      <p>An analyst holding one alert does not need another score. They need
+      the neighbourhood, and that is the question most teams cannot answer
+      while the incident is still open.</p>
+      <div class="stats" style="margin:5mm 0">
+        <div class="num">16<small>systems within three hops<br>of the order service</small></div>
+      </div>
+      <p>One of the sixteen is the card database, which makes this a
+      reportable breach rather than a ticket.</p>
+      <p>The walk is undirected on purpose, because compromise does not
+      respect the direction a relationship happened to be recorded in. Each
+      system is reported at the shallowest hop that reaches it and never
+      again, so the one-hop list is not inflated by longer walks that also
+      arrive.</p>
+    </div>
+    <figure>
+      <img src="shots/blast.png" alt="Blast radius from the order service">
+      <figcaption>Two systems at one hop, six at two, eight at three.</figcaption>
+    </figure>
+  </div>
+  <div class="foot"><span>GraphOps</span><span>6</span></div>
+</section>
+
+<!-- 7 -->
+<section class="slide">
+  <div class="kicker">Structure, not rules</div>
+  <h2>The route no rule fired on</h2>
+  <div class="body cols wide">
+    <div>
+      <p>Five hours before this snapshot, an address that has never tripped a
+      detection rule began using a deployment credential. That credential
+      could already reach the nightly backups, so the address now can too.</p>
+      <p>Every individual step is ordinary, no rule covers any of them, and
+      no rule ever would, because the route is what is new and a rule
+      inspects events. It is computed by walking the graph as it is, walking
+      it as it stood before the window, and taking the difference.</p>
+      <p>The flag is called <code>unflagged_by_rules</code>. An earlier
+      version claimed "every step already known", which can never be false,
+      since in a static graph a path of old edges is an old path. It was
+      removed rather than kept as a number that always looks good.</p>
+    </div>
+    <figure>
+      <img src="shots/novel.png" alt="A new route that no rule fired on">
+      <figcaption>Connected anomalies are grouped, so several low-fidelity
+      signals arrive as one incident instead of staying separate.</figcaption>
+    </figure>
+  </div>
+  <div class="foot"><span>GraphOps</span><span>7</span></div>
+</section>
+
+<!-- 8 -->
+<section class="slide">
+  <div class="kicker">Zero trust</div>
+  <h2>Access held against access used</h2>
+  <div class="body cols wide">
+    <div>
+      <p>The graph carries both. <code>ENTITLED</code> edges come from the
+      identity provider and say what a principal is allowed to reach.
+      <code>CALLED</code> and <code>SERVES</code> edges come from logs and
+      say what it actually reached. Comparing them is one query rather than a
+      reconciliation project.</p>
+      <p>Six grants exist here, four have ever been exercised, and the two
+      that have not both end at a crown jewel. The support desk can read the
+      card database and the HR database, and nobody has ever needed to.</p>
+      <p>This is the pre-incident finding. Nobody has to be attacked for it
+      to be worth fixing, and it is also, from slide 4, the <em>cheapest</em>
+      way into this business.</p>
+    </div>
+    <figure>
+      <img src="shots/privilege.png" alt="Entitlements never exercised">
+      <figcaption>An unused grant is not untidy, it is a free step for
+      whoever takes the credential, who inherits the whole grant rather than
+      the part its owner needed.</figcaption>
+    </figure>
+  </div>
+  <div class="foot"><span>GraphOps</span><span>8</span></div>
+</section>
+
+<!-- 9 -->
+<section class="slide">
+  <div class="kicker">Neo4j track</div>
+  <h2>Two engines, one answer, checked every run</h2>
+  <div class="body">
+    <p class="lede" style="margin-bottom:4mm">The same graph is loaded into
+    Neo4j and the same questions are asked in plain Cypher, with no GDS and
+    no APOC, neither of which ships with Community. Then the two answers are
+    compared.</p>
+    <pre>Neo4j now holds 27 nodes and 42 relationships
+Cypher found 12 routes, the engine found 12.
+Cheapest route by Cypher, cost 2.0
+  192.0.2.133 -> support-desk -> billing-database
+Cheapest route by the engine, cost 2.0
+  192.0.2.133 -> support-desk -> billing-database
+  Both agree.
+  /api/orders       on  5 routes   agrees
+  /admin            on  3 routes   agrees
+  1 hop away:  2   agrees
+  2 hops away:  6   agrees
+  3 hops away:  8   agrees
+Both engines agree on every answer.</pre>
+    <p style="margin-top:4mm">The check earned its place immediately. Cypher
+    first reported thirteen routes where the engine reported twelve, because
+    two nodes can be joined by both an entitlement and an observed use, and
+    Neo4j walked each separately while the engine collapsed them. That is one
+    route through the estate, not two. A submission that only ever ran one
+    engine would have shipped the wrong number without knowing it.</p>
+  </div>
+  <div class="foot"><span>GraphOps</span><span>9</span></div>
+</section>
+
+<!-- 10 -->
+<section class="slide">
+  <div class="kicker">Honesty, and next</div>
+  <h2>What is real here</h2>
+  <div class="body cols">
+    <div>
+      <h3>Real</h3>
+      <ul>
+        <li>Every number in this deck is printed by the code, not drawn.</li>
+        <li>It runs with Python and nothing installed. Neo4j is optional and
+        adds the Cypher path.</li>
+        <li>Both engines run on every demo and are compared.</li>
+      </ul>
+      <h3 style="margin-top:5mm">Not real, said plainly</h3>
+      <ul>
+        <li>The business is invented and the addresses route nowhere.</li>
+        <li>The estate is hand-authored, so the numbers here are the numbers
+        you get when you run it.</li>
+        <li>Louvain here is the local-moving phase, not the full algorithm
+        with graph collapse. It is named that way in the code.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Next</h3>
+      <ul>
+        <li><strong>Somebody has to name the crown jewels.</strong> The graph
+        says what connects to what. Which systems matter is a business
+        judgement, and inferring it from centrality returns the busiest node,
+        which is usually a health check.</li>
+        <li><strong>Streaming.</strong> The estate is rebuilt in a batch
+        today. The same projection from a queue makes blast radius live
+        rather than near-live.</li>
+        <li><strong>Containment.</strong> Blast radius already names what to
+        isolate first, which is the shortest distance between a detection and
+        a contained incident.</li>
+        <li><strong>More sources.</strong> Internal address ranges and an
+        endpoint agent widen the graph well past what logs alone can see.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="foot"><span>hackFront India, Cybersecurity, Neo4j Track</span><span>10</span></div>
+</section>
+
+</body>
+</html>
