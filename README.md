@@ -174,7 +174,7 @@ fed a node.
 |---|---|
 | **Multi-tenancy** | Every query scoped to the principal's organization, never to a caller-supplied parameter. Another tenant's object answers 404, not 403. |
 | **Authentication** | Password (scrypt) plus optional TOTP, account lockout, HS256 tokens, refresh rotation with reuse detection, API keys stored as hashes. |
-| **Authorisation** | 7 roles, 22 permissions, a deny-by-default matrix held as data so the tests can assert properties over all of it. |
+| **Authorisation** | 7 roles, 21 permissions, a deny-by-default matrix held as data so the tests can assert properties over all of it. |
 | **Graph-aware redaction** | `crown:reveal` is its own permission. Without it a crown jewel reads as `crown-jewel-7f3a`: stable per tenant, HMAC-derived, counts preserved. |
 | **Audit** | Append-only and hash-chained. Editing or deleting an entry is detected and the first damaged row is named. Secrets scrubbed before the write. |
 | **REST API** | 24 operations, OpenAPI at `/openapi.json`, Swagger at `/docs`. |

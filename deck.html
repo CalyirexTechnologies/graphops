@@ -319,19 +319,110 @@ Both engines agree on every answer.</pre>
 <!-- 10 -->
 <section class="slide">
   <div class="kicker">Honesty, and next</div>
+  <h2>Nine sources, one estate, and the join that nearly broke it</h2>
+  <div class="body">
+    <p class="lede" style="margin-bottom:4mm">Thirteen integrations across
+    nine categories. Each ships a committed fixture, so the whole pipeline
+    runs with no vendor account, no API key and no network. Live mode issues
+    the real call and refuses to start without credentials rather than
+    falling back to the fixture.</p>
+    <pre>splunk     sentinel    crowdstrike   okta      entra
+cloudtrail qualys      tenable       servicenow          inbound
+jira       slack       teams         pagerduty           outbound
+
+35 nodes, 47 edges after resolving 3 duplicate entities
+
+Cheapest route to regulated data, effort 2.0
+  192.0.2.41 -> svc-deploy -> s3://nightly-backups</pre>
+    <p style="margin-top:4mm">No single source finds that route. Splunk sees
+    an address that has only ever requested <code>/login</code> and that no
+    rule fired on. CloudTrail sees that address assume the
+    <code>svc-deploy</code> role five hours ago. Okta says
+    <code>svc-deploy</code> was entitled to the backups all along and had
+    never used it. Each record alone is unremarkable.</p>
+    <p style="margin-top:3mm"><strong>Entity resolution is what makes that
+    work, and it was a real bug first.</strong> Okta calls the card store
+    <code>billing-database</code> and files it as an application; ServiceNow
+    calls it <code>billing-database</code> and classifies it PCI. Two nodes.
+    Okta's entitlement pointed at one and ServiceNow's classification sat on
+    the other, so the query that should say "support-desk can reach regulated
+    data and never has" returned nothing. The product looked like it worked
+    and quietly answered the wrong question.</p>
+  </div>
+  <div class="foot"><span>GraphOps</span><span>10</span></div>
+</section>
+
+<section class="slide">
+  <h2>Who may see which system is its own question</h2>
+  <div class="body cols">
+    <div>
+      <p class="lede">A tool holding the map of how to reach the regulated
+      data is a concentrated target. The adversary the design worries about
+      most is a legitimate low-privilege user.</p>
+      <p style="margin-top:4mm">So <code>crown:reveal</code> is a permission
+      of its own. Everything else in a security product is read-or-write;
+      this one splits reading a path from reading what sits at the end of
+      it.</p>
+      <pre>analyst  192.0.2.41 -> svc-deploy
+         -> s3://nightly-backups
+
+viewer   192.0.2.41 -> svc-deploy
+         -> crown-jewel-748a9f6a
+
+         _redaction:
+           nodes_redacted: 3
+           unlocked_by: crown:reveal</pre>
+      <p style="margin-top:3mm">Pseudonymised rather than blanked, stable per
+      tenant, HMAC-derived. <strong>Counts are never redacted</strong>, because
+      "three routes reach regulated data" is the number a viewer is there
+      for.</p>
+    </div>
+    <div>
+      <h3>The rest of the platform</h3>
+      <ul>
+        <li><strong>7 roles, 21 permissions</strong>, deny by default, held
+        as data so the tests assert properties over the whole matrix rather
+        than spot-checking roles.</li>
+        <li><strong>Append-only hash-chained audit.</strong> Editing or
+        deleting an entry is detected and the first damaged row is named.</li>
+        <li><strong>24 API operations</strong> with OpenAPI. Authentication is
+        a dependency, not middleware, and a test walks the route table so a
+        route added next month is covered the day it is written.</li>
+        <li><strong>STIX, SARIF, OSCAL, CSV</strong>, each chosen because
+        something downstream already reads it.</li>
+        <li><strong>SOC 2, ISO 27001, CIS</strong> assessed from graph
+        evidence, and <em>never</em> reported satisfied. Only not-satisfied or
+        not-assessed: the graph can prove a control is contradicted, not that
+        one operates.</li>
+      </ul>
+      <p style="margin-top:4mm"><strong>151 tests, 76% coverage.</strong> The
+      security ones are named after the attack they prevent, so a regression
+      reads as "alg none accepted" rather than "assertion failed".</p>
+    </div>
+  </div>
+  <div class="foot"><span>GraphOps</span><span>11</span></div>
+</section>
+
+<section class="slide">
   <h2>What is real here</h2>
   <div class="body cols">
     <div>
       <h3>Real</h3>
       <ul>
         <li>Every number in this deck is printed by the code, not drawn.</li>
-        <li>It runs with Python and nothing installed. Neo4j is optional and
-        adds the Cypher path.</li>
+        <li>The engine, the nine connectors and the CLI run with Python and
+        nothing installed. A CI job proves it by importing them on a clean
+        interpreter and failing if anything third-party was pulled in.</li>
         <li>Both engines run on every demo and are compared.</li>
+        <li>The API, the roles, the redaction and the audit chain are working
+        code with 151 tests against them, not slideware.</li>
       </ul>
       <h3 style="margin-top:5mm">Not real, said plainly</h3>
       <ul>
         <li>The business is invented and the addresses route nowhere.</li>
+        <li>The connector fixtures are synthetic records in each vendor's
+        published response shape, not captures from anyone's tenant. The live
+        API paths are written but have never run against a real account.</li>
         <li>The estate is hand-authored, so the numbers here are the numbers
         you get when you run it.</li>
         <li>Louvain here is the local-moving phase, not the full algorithm
@@ -351,12 +442,13 @@ Both engines agree on every answer.</pre>
         <li><strong>Containment.</strong> Blast radius already names what to
         isolate first, which is the shortest distance between a detection and
         a contained incident.</li>
-        <li><strong>More sources.</strong> Internal address ranges and an
-        endpoint agent widen the graph well past what logs alone can see.</li>
+        <li><strong>More sources.</strong> Nine are connected. Internal
+        address ranges and an endpoint agent widen the graph well past what
+        logs alone can see.</li>
       </ul>
     </div>
   </div>
-  <div class="foot"><span>hackFront India, Cybersecurity, Neo4j Track</span><span>10</span></div>
+  <div class="foot"><span>hackFront India, Cybersecurity, Neo4j Track</span><span>12</span></div>
 </section>
 
 </body>
