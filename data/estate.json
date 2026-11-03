@@ -1,0 +1,519 @@
+{
+  "name": "Northwind Components (synthetic, not a real business)",
+  "generated": "2026-11-03T09:00:00+00:00",
+  "note": "Invented for demonstration. Addresses come from the RFC 5737 documentation ranges and route nowhere.",
+  "nodes": [
+    {
+      "id": "ip-scan-1",
+      "kind": "address",
+      "key": "198.51.100.21",
+      "zone": "untrusted",
+      "label": "198.51.100.21",
+      "crown": false
+    },
+    {
+      "id": "ip-scan-2",
+      "kind": "address",
+      "key": "198.51.100.84",
+      "zone": "untrusted",
+      "label": "198.51.100.84",
+      "crown": false
+    },
+    {
+      "id": "ip-scan-3",
+      "kind": "address",
+      "key": "203.0.113.9",
+      "zone": "untrusted",
+      "label": "203.0.113.9",
+      "crown": false
+    },
+    {
+      "id": "ip-scan-4",
+      "kind": "address",
+      "key": "203.0.113.77",
+      "zone": "untrusted",
+      "label": "203.0.113.77",
+      "crown": false
+    },
+    {
+      "id": "ip-bruteforce",
+      "kind": "address",
+      "key": "192.0.2.133",
+      "zone": "untrusted",
+      "label": "192.0.2.133",
+      "crown": false
+    },
+    {
+      "id": "ip-quiet",
+      "kind": "address",
+      "key": "192.0.2.41",
+      "zone": "untrusted",
+      "label": "192.0.2.41 (no rule has fired)",
+      "crown": false
+    },
+    {
+      "id": "ep-login",
+      "kind": "endpoint",
+      "key": "/login",
+      "zone": "perimeter",
+      "label": "/login",
+      "crown": false
+    },
+    {
+      "id": "ep-orders",
+      "kind": "endpoint",
+      "key": "/api/orders",
+      "zone": "perimeter",
+      "label": "/api/orders",
+      "crown": false
+    },
+    {
+      "id": "ep-upload",
+      "kind": "endpoint",
+      "key": "/api/uploads",
+      "zone": "perimeter",
+      "label": "/api/uploads",
+      "crown": false
+    },
+    {
+      "id": "ep-admin",
+      "kind": "endpoint",
+      "key": "/admin",
+      "zone": "perimeter",
+      "label": "/admin",
+      "crown": false
+    },
+    {
+      "id": "ep-webhook",
+      "kind": "endpoint",
+      "key": "/webhook/payments",
+      "zone": "perimeter",
+      "label": "/webhook/payments",
+      "crown": false
+    },
+    {
+      "id": "asset-web",
+      "kind": "asset",
+      "key": "storefront-web",
+      "zone": "internal",
+      "label": "storefront-web",
+      "crown": false
+    },
+    {
+      "id": "asset-orders",
+      "kind": "asset",
+      "key": "order-service",
+      "zone": "internal",
+      "label": "order-service",
+      "crown": false
+    },
+    {
+      "id": "asset-files",
+      "kind": "asset",
+      "key": "file-store",
+      "zone": "internal",
+      "label": "file-store",
+      "crown": false
+    },
+    {
+      "id": "asset-billing",
+      "kind": "asset",
+      "key": "billing-database",
+      "zone": "crown",
+      "label": "billing-database (card data)",
+      "crown": true
+    },
+    {
+      "id": "asset-hr",
+      "kind": "asset",
+      "key": "hr-database",
+      "zone": "crown",
+      "label": "hr-database (employee records)",
+      "crown": true
+    },
+    {
+      "id": "svc-iam",
+      "kind": "service",
+      "key": "iam",
+      "zone": "internal",
+      "label": "iam",
+      "crown": false
+    },
+    {
+      "id": "svc-backups",
+      "kind": "service",
+      "key": "s3://nightly-backups",
+      "zone": "crown",
+      "label": "s3://nightly-backups (everything, nightly)",
+      "crown": true
+    },
+    {
+      "id": "id-deploy",
+      "kind": "identity",
+      "key": "svc-deploy",
+      "zone": "internal",
+      "label": "svc-deploy",
+      "crown": false
+    },
+    {
+      "id": "id-backup",
+      "kind": "identity",
+      "key": "svc-backup",
+      "zone": "internal",
+      "label": "svc-backup",
+      "crown": false
+    },
+    {
+      "id": "id-finance",
+      "kind": "identity",
+      "key": "finance-admin",
+      "zone": "internal",
+      "label": "finance-admin",
+      "crown": false
+    },
+    {
+      "id": "id-support",
+      "kind": "identity",
+      "key": "support-desk",
+      "zone": "internal",
+      "label": "support-desk",
+      "crown": false
+    },
+    {
+      "id": "cve-upload",
+      "kind": "vulnerability",
+      "key": "CVE-2026-1188 (file-store, unauthenticated upload)",
+      "zone": "internal",
+      "label": "CVE-2026-1188 (file-store, unauthenticated upload)",
+      "crown": false
+    },
+    {
+      "id": "cve-orders",
+      "kind": "vulnerability",
+      "key": "CVE-2026-0442 (order-service, deserialisation)",
+      "zone": "internal",
+      "label": "CVE-2026-0442 (order-service, deserialisation)",
+      "crown": false
+    },
+    {
+      "id": "cve-web",
+      "kind": "vulnerability",
+      "key": "CVE-2025-9910 (storefront-web, outdated TLS library)",
+      "zone": "internal",
+      "label": "CVE-2025-9910 (storefront-web, outdated TLS library)",
+      "crown": false
+    },
+    {
+      "id": "rule-bruteforce",
+      "kind": "rule",
+      "key": "repeated-auth-failure",
+      "zone": "internal",
+      "label": "repeated-auth-failure",
+      "crown": false
+    },
+    {
+      "id": "rule-scan",
+      "kind": "rule",
+      "key": "path-enumeration",
+      "zone": "internal",
+      "label": "path-enumeration",
+      "crown": false
+    }
+  ],
+  "edges": [
+    {
+      "src": "ip-scan-1",
+      "dst": "ep-login",
+      "kind": "requested",
+      "cost": 2.0,
+      "first_seen": "2026-09-24T09:00:00+00:00"
+    },
+    {
+      "src": "ip-scan-1",
+      "dst": "ep-orders",
+      "kind": "requested",
+      "cost": 2.0,
+      "first_seen": "2026-09-24T09:00:00+00:00"
+    },
+    {
+      "src": "ip-scan-2",
+      "dst": "ep-login",
+      "kind": "requested",
+      "cost": 2.0,
+      "first_seen": "2026-09-24T09:00:00+00:00"
+    },
+    {
+      "src": "ip-scan-2",
+      "dst": "ep-orders",
+      "kind": "requested",
+      "cost": 2.0,
+      "first_seen": "2026-09-24T09:00:00+00:00"
+    },
+    {
+      "src": "ip-scan-3",
+      "dst": "ep-login",
+      "kind": "requested",
+      "cost": 2.0,
+      "first_seen": "2026-09-24T09:00:00+00:00"
+    },
+    {
+      "src": "ip-scan-3",
+      "dst": "ep-orders",
+      "kind": "requested",
+      "cost": 2.0,
+      "first_seen": "2026-09-24T09:00:00+00:00"
+    },
+    {
+      "src": "ip-scan-4",
+      "dst": "ep-login",
+      "kind": "requested",
+      "cost": 2.0,
+      "first_seen": "2026-09-24T09:00:00+00:00"
+    },
+    {
+      "src": "ip-scan-4",
+      "dst": "ep-orders",
+      "kind": "requested",
+      "cost": 2.0,
+      "first_seen": "2026-09-24T09:00:00+00:00"
+    },
+    {
+      "src": "ip-bruteforce",
+      "dst": "ep-login",
+      "kind": "requested",
+      "cost": 2.0,
+      "first_seen": "2026-09-24T09:00:00+00:00"
+    },
+    {
+      "src": "ip-bruteforce",
+      "dst": "ep-orders",
+      "kind": "requested",
+      "cost": 2.0,
+      "first_seen": "2026-09-24T09:00:00+00:00"
+    },
+    {
+      "src": "ip-scan-1",
+      "dst": "ep-admin",
+      "kind": "requested",
+      "cost": 2.0,
+      "first_seen": "2026-09-24T09:00:00+00:00"
+    },
+    {
+      "src": "ip-scan-3",
+      "dst": "ep-admin",
+      "kind": "requested",
+      "cost": 2.0,
+      "first_seen": "2026-09-24T09:00:00+00:00"
+    },
+    {
+      "src": "ip-bruteforce",
+      "dst": "ep-admin",
+      "kind": "requested",
+      "cost": 2.0,
+      "first_seen": "2026-09-24T09:00:00+00:00"
+    },
+    {
+      "src": "ip-scan-2",
+      "dst": "ep-upload",
+      "kind": "requested",
+      "cost": 2.0,
+      "first_seen": "2026-10-28T09:00:00+00:00"
+    },
+    {
+      "src": "ip-scan-4",
+      "dst": "ep-upload",
+      "kind": "requested",
+      "cost": 2.0,
+      "first_seen": "2026-10-28T09:00:00+00:00"
+    },
+    {
+      "src": "ip-quiet",
+      "dst": "ep-login",
+      "kind": "requested",
+      "cost": 2.0,
+      "first_seen": "2026-09-24T09:00:00+00:00"
+    },
+    {
+      "src": "ip-bruteforce",
+      "dst": "rule-bruteforce",
+      "kind": "tripped",
+      "cost": 10.0,
+      "first_seen": "2026-10-28T09:00:00+00:00"
+    },
+    {
+      "src": "ip-scan-1",
+      "dst": "rule-scan",
+      "kind": "tripped",
+      "cost": 10.0,
+      "first_seen": "2026-10-28T09:00:00+00:00"
+    },
+    {
+      "src": "ip-scan-3",
+      "dst": "rule-scan",
+      "kind": "tripped",
+      "cost": 10.0,
+      "first_seen": "2026-09-24T09:00:00+00:00"
+    },
+    {
+      "src": "ep-login",
+      "dst": "asset-web",
+      "kind": "serves",
+      "cost": 3.0,
+      "first_seen": "2026-09-24T09:00:00+00:00"
+    },
+    {
+      "src": "ep-orders",
+      "dst": "asset-orders",
+      "kind": "serves",
+      "cost": 3.0,
+      "first_seen": "2026-09-24T09:00:00+00:00"
+    },
+    {
+      "src": "ep-upload",
+      "dst": "asset-files",
+      "kind": "serves",
+      "cost": 3.0,
+      "first_seen": "2026-09-24T09:00:00+00:00"
+    },
+    {
+      "src": "ep-admin",
+      "dst": "asset-billing",
+      "kind": "serves",
+      "cost": 3.0,
+      "first_seen": "2026-09-24T09:00:00+00:00"
+    },
+    {
+      "src": "ep-webhook",
+      "dst": "asset-billing",
+      "kind": "serves",
+      "cost": 3.0,
+      "first_seen": "2026-09-24T09:00:00+00:00"
+    },
+    {
+      "src": "ep-orders",
+      "dst": "asset-billing",
+      "kind": "serves",
+      "cost": 3.0,
+      "first_seen": "2026-10-28T09:00:00+00:00"
+    },
+    {
+      "src": "asset-files",
+      "dst": "cve-upload",
+      "kind": "exposes",
+      "cost": 5.0,
+      "first_seen": "2026-09-24T09:00:00+00:00"
+    },
+    {
+      "src": "asset-orders",
+      "dst": "cve-orders",
+      "kind": "exposes",
+      "cost": 5.0,
+      "first_seen": "2026-09-24T09:00:00+00:00"
+    },
+    {
+      "src": "asset-web",
+      "dst": "cve-web",
+      "kind": "exposes",
+      "cost": 5.0,
+      "first_seen": "2026-09-24T09:00:00+00:00"
+    },
+    {
+      "src": "ip-bruteforce",
+      "dst": "id-support",
+      "kind": "yields",
+      "cost": 1.0,
+      "first_seen": "2026-10-28T09:00:00+00:00"
+    },
+    {
+      "src": "ip-scan-4",
+      "dst": "id-finance",
+      "kind": "yields",
+      "cost": 1.0,
+      "first_seen": "2026-10-28T09:00:00+00:00"
+    },
+    {
+      "src": "id-support",
+      "dst": "svc-iam",
+      "kind": "called",
+      "cost": 1.0,
+      "first_seen": "2026-09-24T09:00:00+00:00"
+    },
+    {
+      "src": "id-finance",
+      "dst": "asset-hr",
+      "kind": "serves",
+      "cost": 2.0,
+      "first_seen": "2026-09-24T09:00:00+00:00"
+    },
+    {
+      "src": "id-deploy",
+      "dst": "svc-iam",
+      "kind": "called",
+      "cost": 1.0,
+      "first_seen": "2026-09-24T09:00:00+00:00"
+    },
+    {
+      "src": "id-backup",
+      "dst": "svc-backups",
+      "kind": "called",
+      "cost": 1.0,
+      "first_seen": "2026-09-24T09:00:00+00:00"
+    },
+    {
+      "src": "id-support",
+      "dst": "svc-iam",
+      "kind": "entitled",
+      "cost": 1.0,
+      "first_seen": "2026-09-24T09:00:00+00:00"
+    },
+    {
+      "src": "id-backup",
+      "dst": "svc-backups",
+      "kind": "entitled",
+      "cost": 1.0,
+      "first_seen": "2026-09-24T09:00:00+00:00"
+    },
+    {
+      "src": "id-deploy",
+      "dst": "svc-iam",
+      "kind": "entitled",
+      "cost": 1.0,
+      "first_seen": "2026-09-24T09:00:00+00:00"
+    },
+    {
+      "src": "id-support",
+      "dst": "asset-billing",
+      "kind": "entitled",
+      "cost": 1.0,
+      "first_seen": "2026-09-24T09:00:00+00:00"
+    },
+    {
+      "src": "id-support",
+      "dst": "asset-hr",
+      "kind": "entitled",
+      "cost": 1.0,
+      "first_seen": "2026-09-24T09:00:00+00:00"
+    },
+    {
+      "src": "id-deploy",
+      "dst": "svc-backups",
+      "kind": "entitled",
+      "cost": 1.0,
+      "first_seen": "2026-09-24T09:00:00+00:00"
+    },
+    {
+      "src": "ip-quiet",
+      "dst": "id-deploy",
+      "kind": "yields",
+      "cost": 1.0,
+      "first_seen": "2026-11-03T04:00:00+00:00"
+    },
+    {
+      "src": "id-deploy",
+      "dst": "svc-backups",
+      "kind": "called",
+      "cost": 1.0,
+      "first_seen": "2026-11-03T04:00:00+00:00"
+    }
+  ]
+}
