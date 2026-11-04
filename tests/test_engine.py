@@ -720,3 +720,41 @@ def test_containment_simulates_a_bounded_number_of_cuts(demo_estate):
     """Each cut re-runs the whole search, so the ceiling is a cost ceiling."""
     result = analysis.containment(demo_estate, candidates=2)
     assert len([o for o in result['options'] if o['kind'] == 'node']) <= 2
+
+
+def test_containment_budgets_searches_run_not_results_kept(monkeypatch):
+    """The regression test for a 29.6 second request.
+
+    The entitlement loop used to break on how many options it had KEPT. A
+    grant that changed nothing still cost a full path search and then hit a
+    `continue`, leaving the budget untouched, so the loop ran once per
+    dormant grant reaching a crown jewel. On a generated 94k-node estate
+    that was 292 searches and half a minute of CPU for one request.
+
+    Counting the searches rather than timing them, because a timing
+    assertion on a shared machine fails for reasons that have nothing to do
+    with this code.
+    """
+    from graphops import bench
+
+    estate = analysis.Estate(bench.layered(100))
+    dormant = analysis.over_privilege(estate)['dormant']
+    reaching = [d for d in dormant if d['reaches_crown_jewel']]
+    assert len(reaching) > 20, (
+        'this estate has %d dormant grants reaching a crown jewel, too few '
+        'for the test to mean anything' % len(reaching))
+
+    calls = []
+    real = alg.attack_paths
+
+    def counting(*args, **kwargs):
+        calls.append(kwargs.get('blocked_edges') or kwargs.get('blocked') or 'base')
+        return real(*args, **kwargs)
+
+    monkeypatch.setattr(alg, 'attack_paths', counting)
+    analysis.containment(estate, candidates=3)
+
+    # One baseline search, at most three node cuts, at most three grant cuts.
+    assert len(calls) <= 7, 'ran %d searches for 3 candidates' % len(calls)
+    assert len(calls) < len(reaching), (
+        'still scaling with the number of dormant grants')

@@ -13,10 +13,57 @@ from graphops.api.app import PUBLIC_PATHS
 
 
 # ------------------------------------------------------------ the guarantee
+def walk_routes(router):
+    """Every route, including the ones nested inside included routers.
+
+    THIS HELPER EXISTS BECAUSE ITS ABSENCE MADE THE GUARANTEE BELOW VACUOUS.
+    This version of FastAPI keeps an `include_router` call as an
+    `_IncludedRouter` entry in `app.routes` instead of flattening its routes
+    into the parent. Those wrappers have no `path`, so a walk that skipped
+    anything without one skipped every route the application actually
+    serves, examined the four documentation routes, found them all in
+    PUBLIC_PATHS, and passed.
+
+    A route-table walk is the right shape for this check and that is exactly
+    why it has to be verified: a guarantee that iterates the wrong collection
+    is worse than no guarantee, because the green tick is read as coverage.
+    """
+    for route in getattr(router, 'routes', ()) or ():
+        # An included router is reachable through `original_router` on this
+        # version and through `routes` on others. Both are tried rather than
+        # one, because the failure mode of guessing wrong is a silent pass.
+        nested = getattr(route, 'original_router', None)
+        if nested is None and getattr(route, 'routes', None):
+            nested = route
+        if nested is not None:
+            yield from walk_routes(nested)
+        if getattr(route, 'path', None) is not None:
+            yield route
+
+
+def test_the_route_walk_actually_reaches_the_application_routes():
+    """Guards the guard. If this drops, the test below means nothing."""
+    from graphops.api.app import create_app
+    from graphops.config import load_settings
+    from graphops.store.db import Database
+
+    database = Database(':memory:')
+    try:
+        app = create_app(settings=load_settings(), db=database,
+                         estate_provider=lambda: None)
+        paths = {route.path for route in walk_routes(app)}
+    finally:
+        database.close()
+
+    assert '/v1/graph/exposure' in paths
+    assert '/v1/auth/login' in paths
+    assert len(paths) > 20, 'the walk found %d paths, which is too few' % len(paths)
+
+
 def test_every_route_is_guarded(app):
     """No route may be reachable without resolving a principal."""
     unguarded = []
-    for route in app.routes:
+    for route in walk_routes(app):
         path = getattr(route, 'path', None)
         endpoint = getattr(route, 'endpoint', None)
         if path is None or endpoint is None or path in PUBLIC_PATHS:

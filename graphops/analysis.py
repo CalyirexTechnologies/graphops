@@ -281,13 +281,33 @@ def containment(estate, max_depth=4, max_paths=400, candidates=MAX_CUTS_SIMULATE
     # ------------------------------------------- revoking a dormant grant
     # Only the ones that reach a crown jewel. Revoking a dormant grant to
     # something nobody is attacking is tidying, not containment.
-    dormant = over_privilege(estate)['dormant']
-    for grant in dormant:
-        if len(options) >= candidates * 2:
+    #
+    # THE PRE-FILTER IS WHAT MAKES THIS AFFORDABLE. A grant whose edge does
+    # not lie on any enumerated route cannot remove one, so it can be
+    # skipped without running the search at all. Without this the loop paid
+    # for a full simulation and then threw it away on the `continue`: on a
+    # generated 94k-node estate there were 292 dormant grants reaching a
+    # crown jewel, and one request took 29.6 seconds. The benchmark caught
+    # it, which is most of the argument for having a benchmark.
+    on_routes = set()
+    for found in before:
+        route = found['path']
+        for step in range(len(route) - 1):
+            on_routes.add((route[step], route[step + 1]))
+
+    simulated = 0
+    for grant in over_privilege(estate)['dormant']:
+        # A budget on SEARCHES RUN, not on results kept. Counting results
+        # was the original bug: a candidate that changed nothing cost a full
+        # search and then left the budget untouched.
+        if simulated >= candidates or len(options) >= candidates * 2:
             break
         if not grant['reaches_crown_jewel']:
             continue
         pair = (grant['identity']['id'], grant['target']['id'])
+        if pair not in on_routes:
+            continue        # free: this grant is on no route we found
+        simulated += 1
         after, cheapest_after = measure(blocked_edges={pair})
         if len(after) == len(before):
             continue        # nothing to report: no route used this grant
