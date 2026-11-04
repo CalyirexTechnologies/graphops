@@ -276,8 +276,14 @@ def register_routes(app, *, identity, audit, current_principal, requires,
                   offset: int = Query(default=0, ge=0)):
         # Scoped to the caller's own organization. Not a filter the caller
         # supplies: a tenant must not be able to ask for another's log.
-        return {'entries': audit.entries(organization_id=principal.organization,
-                                         limit=limit, offset=offset)}
+        #
+        # Redacted on the way out, because an entry's `resource` is whatever
+        # the analyst queried, and an analyst running blast radius on the
+        # card database writes its id into the log an auditor then reads.
+        # The stored rows are untouched, so the hash chain still verifies.
+        return respond({'entries': audit.entries(
+            organization_id=principal.organization,
+            limit=limit, offset=offset)}, principal)
 
     @admin.get('/audit/verify', summary='Recompute the audit hash chain')
     def audit_verify(principal: Principal = Depends(requires(Permission.AUDIT_READ))):

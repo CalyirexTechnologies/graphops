@@ -196,7 +196,18 @@ def create_app(*, settings: Settings, db, estate_provider=None) -> FastAPI:
         return provider()
 
     def respond(payload: dict, principal: Principal) -> dict:
-        return redact(payload, principal, salt=app.state.redaction_salt)
+        # The estate is passed so the redactor knows every name a crown jewel
+        # goes by and can scrub it from text as well as from node records.
+        # Without it, sentences such as finding titles carried the names to
+        # roles that may not see them. When no estate is loaded there are no
+        # crown jewels to name, so the response goes through node masking
+        # alone rather than failing.
+        provider = app.state.estate_provider
+        estate = None
+        if provider is not None and not principal.can(Permission.CROWN_REVEAL):
+            estate = provider()
+        return redact(payload, principal, salt=app.state.redaction_salt,
+                      estate=estate)
 
     app.dependency_overrides_provider = None
     app.state.current_principal = current_principal

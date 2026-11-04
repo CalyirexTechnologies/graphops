@@ -13,7 +13,7 @@ given so the claim is checkable rather than asserted.
 
 | Property | Test |
 |---|---|
-| No route is reachable without authentication | `test_every_route_is_guarded` |
+| No route is reachable without authentication | `test_every_route_is_guarded`, kept honest by `test_the_route_walk_actually_reaches_the_application_routes` |
 | `alg: none` cannot forge a token | `test_alg_none_is_refused` |
 | A token without `exp` is refused | `test_a_token_with_no_expiry_is_refused` |
 | A refresh token cannot be used as an access token | `test_a_refresh_token_cannot_be_used_as_an_access_token` |
@@ -26,7 +26,17 @@ given so the claim is checkable rather than asserted.
 | A tenant cannot read another tenant's audit log | `test_a_tenant_cannot_read_another_tenants_audit_log` |
 | Another tenant's object answers 404, not 403 | `test_revoking_another_tenants_api_key_answers_404` |
 | Crown jewel identities are withheld without `crown:reveal` | `test_a_viewer_gets_a_pseudonym_and_a_notice` |
+| No route names a crown jewel to a role without `crown:reveal`, in any field or sentence | `test_no_route_names_a_crown_jewel_to_a_role_without_reveal`, which walks the route table and searches each whole response for every name a crown jewel goes by |
 | Redaction reaches response shapes nobody anticipated | `test_redaction_reaches_a_shape_nobody_anticipated` |
+
+Two rows above were not true until 4 November 2026, and both failures were
+the same kind: a test that passed because it checked less than its name
+claimed. The route-table walk skipped every application route, because this
+FastAPI version nests included routers behind entries with no `path`. And
+redaction masked crown jewel records but left their names in plain text, so
+finding titles, compliance evidence and containment sentences named them to
+auditors and viewers. Both are fixed and both now have a test that fails if
+the fix is reverted.
 | Secrets never reach the audit log | `test_secrets_never_reach_the_log` |
 | Editing or deleting an audit entry is detected | `test_editing_an_entry_is_detected`, `test_deleting_an_entry_is_detected` |
 | A compliance control is never reported satisfied | `test_a_control_is_never_reported_satisfied` |
