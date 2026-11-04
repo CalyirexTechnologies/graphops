@@ -311,6 +311,71 @@ def test_running_connectors_reports_resolution(client, auth_header):
     assert body['resolution']['merged'] >= 3
 
 
+# -------------------------------------------------------------- containment
+def test_containment_ranks_what_a_cut_was_measured_to_buy(client, auth_header):
+    body = client.get('/v1/graph/containment',
+                      headers=auth_header('analyst')).json()
+    assert body['reachable'] is True
+    assert body['routes_before'] > 0
+    assert body['options']
+
+    for option in body['options']:
+        assert option['kind'] in ('node', 'entitlement')
+        assert option['routes_after'] == (option['routes_before']
+                                          - option['routes_removed'])
+        assert option['cut']['action']
+
+    # The first option is the one a team should do first, and the ranking
+    # puts reach removed above routes removed.
+    best = body['options'][0]
+    assert best['fully_contained'] or best['crown_jewels_cut_off']
+
+
+def test_an_auditor_can_plan_a_cut_without_learning_what_it_protects(
+        client, auth_header):
+    """The redaction has to survive a new response shape.
+
+    Crown jewels appear inside `crown_jewels_cut_off` and `cut` here, which
+    are nested differently from the path steps the redactor was written
+    against. A permission that only covers the shapes that existed when it
+    was written is not a permission.
+    """
+    analyst = client.get('/v1/graph/containment',
+                         headers=auth_header('analyst')).json()
+    auditor = client.get('/v1/graph/containment',
+                         headers=auth_header('auditor')).json()
+
+    assert len(auditor['options']) == len(analyst['options']) > 0
+    assert '_redaction' not in analyst
+    assert auditor['_redaction']['nodes_redacted'] > 0
+
+    analyst_jewels = [j['key'] for j in analyst['crown_jewels_at_risk']]
+    auditor_jewels = [j['key'] for j in auditor['crown_jewels_at_risk']]
+    assert analyst_jewels and auditor_jewels
+    assert all(j.startswith('crown-jewel-') for j in auditor_jewels)
+    assert not set(auditor_jewels) & set(analyst_jewels)
+
+    # The decision itself survives: same ranking, same counts. Only the
+    # identity of what is protected is withheld.
+    assert ([o['routes_removed'] for o in auditor['options']]
+            == [o['routes_removed'] for o in analyst['options']])
+
+
+def test_containment_is_capped_so_one_request_cannot_cost_a_minute(
+        client, auth_header):
+    """Each candidate re-runs the whole path search."""
+    response = client.get('/v1/graph/containment?candidates=99',
+                          headers=auth_header('analyst'))
+    assert response.status_code == 422
+
+
+def test_containment_needs_the_same_permission_as_any_other_query(
+        client, auth_header):
+    assert client.get('/v1/graph/containment').status_code == 401
+    assert client.get('/v1/graph/containment',
+                      headers=auth_header('viewer')).status_code == 403
+
+
 # ------------------------------------------------------------------ headers
 def test_security_headers_are_present(client):
     response = client.get('/health')

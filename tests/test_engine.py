@@ -9,6 +9,7 @@ particular, and `estate.py` had no test at all.
 Every test below asserts a claim made in a docstring or in the write-up, so
 a claim that stops being true fails here rather than in a demo.
 """
+import random
 from datetime import datetime, timedelta, timezone
 
 import pytest
@@ -531,3 +532,191 @@ def test_a_naive_timestamp_is_read_as_utc_rather_than_local_time():
     stamp = analysis._when('2026-11-03T09:00:00')
     assert stamp.tzinfo is not None
     assert stamp == datetime(2026, 11, 3, 9, 0, tzinfo=timezone.utc)
+
+
+# --------------------------------------------------------------------------
+# Containment. What a cut buys, measured by making it.
+# --------------------------------------------------------------------------
+
+def test_a_blocked_node_is_not_walked_through():
+    graph = alg.Graph()
+    graph.add('in', 'hub')
+    graph.add('hub', 'goal')
+
+    assert alg.attack_paths(graph, ['in'], ['goal'], blocked={'hub'}) == []
+    assert alg.cheapest_path(graph, ['in'], ['goal'], blocked={'hub'}) == (None, None)
+
+
+def test_a_blocked_source_is_not_a_starting_point():
+    graph = alg.Graph()
+    graph.add('in', 'goal')
+    assert alg.attack_paths(graph, ['in'], ['goal'], blocked={'in'}) == []
+
+
+def test_blocking_one_edge_leaves_the_other_ways_into_the_same_node():
+    """Revoking a grant is an edge cut, not a node cut. The system stays up."""
+    graph = alg.Graph()
+    graph.add('in', 'identity')
+    graph.add('identity', 'goal', kind=EdgeKind.ENTITLED)
+    graph.add('in', 'other')
+    graph.add('other', 'goal', kind=EdgeKind.SERVES)
+
+    paths = alg.attack_paths(graph, ['in'], ['goal'],
+                             blocked_edges={('identity', 'goal')})
+    assert [p['path'] for p in paths] == [['in', 'other', 'goal']]
+
+
+def _assorted_graphs(count=120, seed=3):
+    """Small random graphs, to check a property over shapes rather than one.
+
+    Seeded, so a failure is reproducible rather than a story about a build
+    that went red once. `random` is the right generator here and the S311
+    warning is about cryptographic use, which this is not: the numbers pick
+    graph shapes and nothing about them is secret.
+    """
+    rng = random.Random(seed)                        # noqa: S311 - see above
+    for _ in range(count):
+        graph = alg.Graph()
+        for _ in range(40):
+            a, b = rng.randrange(12), rng.randrange(12)
+            if a != b:
+                graph.add('n%d' % a, 'n%d' % b, cost=rng.choice([1.0, 2.0, 5.0]))
+        yield graph
+
+
+def _first_choke(graph, cap):
+    """The busiest interior node, with the routes it was counted on."""
+    before = alg.attack_paths(graph, ['n0'], ['n11'], max_depth=5, max_paths=cap)
+    chokes = alg.choke_points(before, exclude={'n0', 'n11'})
+    if len(before) < 2 or not chokes:
+        return None
+    after = alg.attack_paths(graph, ['n0'], ['n11'], max_depth=5,
+                             max_paths=cap, blocked={chokes[0]['node']})
+    return len(before) - len(after), chokes[0]['paths_through']
+
+
+def test_a_cut_node_removes_exactly_the_routes_counted_through_it():
+    """The property that makes the route count redundant, when uncapped.
+
+    Deleting a node from an enumeration of simple paths can only delete
+    paths; it cannot create one. So routes removed must equal routes counted
+    through, every time, and the first version of the containment docstring
+    claiming otherwise was wrong. Checked here over many shapes rather than
+    asserted once, because this is the claim the docstring now rests on.
+    """
+    checked = 0
+    for graph in _assorted_graphs():
+        measured = _first_choke(graph, cap=alg.MAX_PATHS)
+        if measured is None:
+            continue
+        removed, counted = measured
+        assert removed == counted
+        checked += 1
+    assert checked > 50, 'the property was barely exercised'
+
+
+def test_the_route_count_stops_being_reliable_once_the_cap_binds():
+    """And this is why containment simulates instead of counting.
+
+    With the enumeration capped, the paths through a node are only the ones
+    the search happened to reach before it stopped. Cut the node and the
+    freed budget admits routes the first pass never listed, so the count and
+    the measurement disagree. On an estate large enough to hit max_paths,
+    which is the normal case, the simulation is the correct number and the
+    count is not.
+    """
+    disagreements = 0
+    for graph in _assorted_graphs():
+        measured = _first_choke(graph, cap=6)
+        if measured is None:
+            continue
+        removed, counted = measured
+        if removed != counted:
+            disagreements += 1
+    assert disagreements > 0, (
+        'if this ever stops disagreeing, counting would be as good as '
+        'simulating and the containment feature would not need to exist')
+
+
+def test_containment_names_the_crown_jewel_a_cut_actually_protects(demo_estate):
+    """A count cannot see the far end of a path. This can."""
+    result = analysis.containment(demo_estate)
+    protective = [o for o in result['options'] if o['crown_jewels_cut_off']]
+    assert protective, 'expected at least one cut to put a target out of reach'
+    for option in protective:
+        for jewel in option['crown_jewels_cut_off']:
+            assert jewel['is_crown_jewel']
+
+
+def test_a_cut_can_remove_most_routes_and_leave_the_attacker_no_worse_off(demo_estate):
+    """The result worth seeing before the change meeting rather than after.
+
+    On the demo estate the busiest choke point carries most of the routes,
+    and cutting it moves the cheapest route's effort by nothing at all,
+    because an unrelated route is equally cheap. Counting paths through a
+    node would have called this the top remediation.
+    """
+    result = analysis.containment(demo_estate)
+    busiest = max(result['options'], key=lambda o: o['routes_removed'])
+    assert busiest['routes_removed'] >= result['routes_before'] // 3
+    assert busiest['effort_added'] == 0.0
+    assert busiest['cheapest_after'] == result['cheapest_before']
+
+
+def test_revoking_a_dormant_grant_is_offered_beside_taking_a_system_down(demo_estate):
+    """The two kinds of cut on one list, which is the comparison a team needs.
+
+    Entitlements are not choke points and never appear in that ranking, so
+    counting alone cannot put them side by side with a decommissioning.
+    """
+    result = analysis.containment(demo_estate)
+    kinds = {o['kind'] for o in result['options']}
+    assert kinds == {'node', 'entitlement'}
+    for option in result['options']:
+        if option['kind'] == 'entitlement':
+            assert option['cut']['action'].startswith('revoke ')
+            assert option['routes_removed'] > 0, (
+                'a revocation that removes nothing should not be offered')
+
+
+def test_a_cut_that_closes_everything_is_ranked_first():
+    payload = {'name': 'single way in', 'nodes': [
+        {'id': 'ip', 'kind': NodeKind.ADDRESS, 'key': '192.0.2.1',
+         'zone': Zone.UNTRUSTED, 'crown': False},
+        {'id': 'gate', 'kind': NodeKind.ENDPOINT, 'key': '/gate',
+         'zone': Zone.PERIMETER, 'crown': False},
+        {'id': 'spare', 'kind': NodeKind.ENDPOINT, 'key': '/spare',
+         'zone': Zone.PERIMETER, 'crown': False},
+        {'id': 'vault', 'kind': NodeKind.ASSET, 'key': 'vault',
+         'zone': Zone.CROWN, 'crown': True}],
+        'edges': [
+            {'src': 'ip', 'dst': 'gate', 'kind': EdgeKind.REQUESTED,
+             'cost': 2.0, 'first_seen': '2026-10-01T00:00:00+00:00'},
+            {'src': 'ip', 'dst': 'spare', 'kind': EdgeKind.REQUESTED,
+             'cost': 2.0, 'first_seen': '2026-10-01T00:00:00+00:00'},
+            {'src': 'gate', 'dst': 'vault', 'kind': EdgeKind.SERVES,
+             'cost': 3.0, 'first_seen': '2026-10-01T00:00:00+00:00'}]}
+    result = analysis.containment(analysis.Estate(payload))
+    assert result['options'][0]['cut']['key'] == '/gate'
+    assert result['options'][0]['fully_contained'] is True
+    assert result['options'][0]['cheapest_after'] is None
+
+
+def test_containment_says_why_when_there_is_nothing_to_contain():
+    payload = {'name': 'bare', 'nodes': [
+        {'id': 'ip', 'kind': NodeKind.ADDRESS, 'key': '192.0.2.1',
+         'zone': Zone.UNTRUSTED, 'crown': False},
+        {'id': 'box', 'kind': NodeKind.ASSET, 'key': 'box',
+         'zone': Zone.INTERNAL, 'crown': False}],
+        'edges': [{'src': 'ip', 'dst': 'box', 'kind': EdgeKind.REQUESTED,
+                   'cost': 2.0, 'first_seen': '2026-10-01T00:00:00+00:00'}]}
+    result = analysis.containment(analysis.Estate(payload))
+    assert result['reachable'] is False
+    assert result['options'] == []
+    assert 'crown jewel' in result['why']
+
+
+def test_containment_simulates_a_bounded_number_of_cuts(demo_estate):
+    """Each cut re-runs the whole search, so the ceiling is a cost ceiling."""
+    result = analysis.containment(demo_estate, candidates=2)
+    assert len([o for o in result['options'] if o['kind'] == 'node']) <= 2

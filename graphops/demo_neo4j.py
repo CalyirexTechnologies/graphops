@@ -11,7 +11,7 @@ import os
 import sys
 
 from . import neo4j_store as store
-from .analysis import Estate, blast_radius, exposure
+from .analysis import Estate, blast_radius, containment, exposure
 
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ESTATE = os.path.join(HERE, 'data', 'estate.json')
@@ -89,6 +89,36 @@ def main():
         print('  %-30s on %2d routes   %s' % (row['node'][:30], row['through'], agree))
         if mine != row['through']:
             ok = False
+
+    # ----------------------------------------------------------- containment
+    # The cross-check that matters most, because this is the answer a team
+    # acts on. Agreeing on a route count is reassuring; agreeing on which cut
+    # protects which crown jewel is the claim worth defending.
+    print('\n' + RULE)
+    print('CONTAINMENT, answered by Cypher')
+    print(RULE)
+    cypher_cuts = store.containment(driver)
+    engine_cuts = {o['cut']['key']: o
+                   for o in containment(estate)['options'] if o['kind'] == 'node'}
+    for row in cypher_cuts[:5]:
+        mine = engine_cuts.get(row['candidate'])
+        jewels = row['crown_jewels_cut_off']
+        print('  cut %-22s removes %2d of %d routes, cheapest %.1f -> %s%s'
+              % (row['candidate'][:22], row['routes_removed'],
+                 row['routes_before'], row['cheapest_before'],
+                 ('%.1f' % row['cheapest_after']
+                  if row['cheapest_after'] is not None else 'no route left'),
+                 (', protects %s' % ', '.join(jewels)) if jewels else ''))
+        if mine is None:
+            continue
+        mine_jewels = sorted(j['key'] for j in mine['crown_jewels_cut_off'])
+        if (mine['routes_removed'] != row['routes_removed']
+                or mine_jewels != sorted(jewels)):
+            ok = False
+            print('      DIFFERS, engine removes %d and protects %s'
+                  % (mine['routes_removed'], mine_jewels or 'nothing'))
+        else:
+            print('      agrees')
 
     # --------------------------------------------------------- blast radius
     print('\n' + RULE)

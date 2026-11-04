@@ -96,24 +96,31 @@ def blast_radius(graph, origin, max_hops=3, limit=MAX_NODES):
     return rings
 
 
-def cheapest_path(graph, sources, targets, max_depth=MAX_DEPTH):
+def cheapest_path(graph, sources, targets, max_depth=MAX_DEPTH,
+                  blocked=(), blocked_edges=()):
     """The least effort an attacker needs to get from any source to any target.
 
     Dijkstra over edge cost, not hop count. A three-hop route that only
     reuses credentials is a likelier intrusion than a two-hop route that
     needs an exploit to land, and ranking by hops inverts those two.
 
+    `blocked` and `blocked_edges` take a node set and a (src, dst) set out of
+    play, which is how a proposed remediation is measured rather than
+    guessed at. See `analysis.containment`.
+
     Returns (path, total_cost) or (None, None).
     """
     targets = set(targets)
     if not targets:
         return None, None
+    blocked = set(blocked)
+    blocked_edges = set(blocked_edges)
 
     dist = {}
     prev = {}
     heap = []
     for s in sources:
-        if s in graph.nodes:
+        if s in graph.nodes and s not in blocked:
             dist[s] = 0.0
             heapq.heappush(heap, (0.0, 0, s))
 
@@ -129,6 +136,8 @@ def cheapest_path(graph, sources, targets, max_depth=MAX_DEPTH):
         if depth >= max_depth:
             continue
         for peer in graph.out.get(node, []):
+            if peer in blocked or (node, peer) in blocked_edges:
+                continue
             step = cost + graph.edge_cost.get((node, peer), 1.0)
             if step < dist.get(peer, float('inf')):
                 dist[peer] = step
@@ -137,21 +146,30 @@ def cheapest_path(graph, sources, targets, max_depth=MAX_DEPTH):
     return None, None
 
 
-def attack_paths(graph, sources, targets, max_depth=4, max_paths=200):
+def attack_paths(graph, sources, targets, max_depth=4, max_paths=200,
+                 blocked=(), blocked_edges=()):
     """Every route from untrusted ground to something that matters.
 
     Depth-first with an explicit stack and a path-local visited set, so a
     cycle cannot loop and two different routes through the same node both
     survive. Bounded twice over: by depth and by how many paths we will
     enumerate at all.
+
+    `blocked` takes nodes out of play and `blocked_edges` takes (src, dst)
+    pairs out of play. Re-running with a cut applied is the only honest way
+    to say what a remediation buys, because the routes that survive a cut
+    include ones that did not exist before it: traffic reroutes, and a count
+    of paths through a node cannot see that. See `analysis.containment`.
     """
     max_depth = max(1, min(int(max_depth), MAX_DEPTH))
     max_paths = max(1, min(int(max_paths), MAX_PATHS))
     targets = set(targets)
+    blocked = set(blocked)
+    blocked_edges = set(blocked_edges)
     found = []
 
     for src in sources:
-        if src not in graph.nodes or len(found) >= max_paths:
+        if src not in graph.nodes or src in blocked or len(found) >= max_paths:
             continue
         stack = [(src, [src], {src}, 0.0)]
         while stack and len(found) < max_paths:
@@ -163,6 +181,8 @@ def attack_paths(graph, sources, targets, max_depth=4, max_paths=200):
                 continue
             for peer in graph.out.get(node, []):
                 if peer in onpath:          # a cycle, not a route
+                    continue
+                if peer in blocked or (node, peer) in blocked_edges:
                     continue
                 stack.append((peer, path + [peer], onpath | {peer},
                               cost + graph.edge_cost.get((node, peer), 1.0)))

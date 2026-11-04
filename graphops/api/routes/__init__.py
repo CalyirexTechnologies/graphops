@@ -146,6 +146,23 @@ def register_routes(app, *, identity, audit, current_principal, requires,
                      detail={'paths': len(result.get('paths', []))})
         return respond(result, principal)
 
+    @graph.get('/containment', summary='What one cut is measured to buy')
+    def containment(principal: Principal = Depends(requires(Permission.GRAPH_QUERY)),
+                    max_depth: int = Query(default=4, ge=1, le=6),
+                    max_paths: int = Query(default=400, ge=1, le=2000),
+                    candidates: int = Query(default=6, ge=1, le=12)):
+        # `candidates` is capped low because every candidate re-runs the whole
+        # path search. It is a cost ceiling on one request, not a preference.
+        from ... import analysis
+        result = analysis.containment(current_estate(), max_depth=max_depth,
+                                      max_paths=max_paths, candidates=candidates)
+        audit.record(action='graph.containment', outcome=Outcome.SUCCESS,
+                     organization_id=principal.organization,
+                     actor_id=principal.subject,
+                     on_behalf_of=principal.impersonated_by,
+                     detail={'options': len(result.get('options', []))})
+        return respond(result, principal)
+
     @graph.post('/blast-radius', summary='What one compromise reaches')
     def blast_radius(body: BlastRadiusRequest,
                      principal: Principal = Depends(requires(Permission.GRAPH_QUERY))):

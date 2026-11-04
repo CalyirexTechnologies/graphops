@@ -101,6 +101,47 @@ def cmd_analyse(args) -> int:
     return 0
 
 
+def cmd_containment(args) -> int:
+    """Rank the single cuts by what each was measured to buy."""
+    from . import analysis
+    from .connectors import registry, resolve
+
+    if args.estate:
+        estate = analysis.Estate.from_file(args.estate)
+    else:
+        estate = analysis.Estate(resolve.resolve(registry.ingest().estate))
+
+    result = analysis.containment(estate)
+    if not result.get('reachable'):
+        print(result.get('why', 'Nothing to contain.'))
+        return 0
+
+    print('%d routes reach %d crown jewels, cheapest at effort %.1f\n'
+          % (result['routes_before'], len(result['crown_jewels_at_risk']),
+             result['cheapest_before']))
+    print('Each line below was measured by making the cut and running the '
+          'search again.\n')
+
+    for index, option in enumerate(result['options'], start=1):
+        protects = [j['key'] for j in option['crown_jewels_cut_off']]
+        print('%d. %s' % (index, option['cut']['action']))
+        print('   removes %d of %d routes'
+              % (option['routes_removed'], option['routes_before']), end='')
+        if option['fully_contained']:
+            print(', leaving no route at all')
+        elif protects:
+            print(', and puts %s out of reach' % ', '.join(protects))
+        else:
+            print(', every crown jewel still reachable')
+        if option['cheapest_after'] is not None:
+            print('   attacker effort for what is left: %.1f -> %.1f'
+                  % (option['cheapest_before'], option['cheapest_after']))
+        if option['kind'] == 'entitlement':
+            print('   this one is a grant nobody has used, so no downtime')
+        print()
+    return 0
+
+
 def cmd_export(args) -> int:
     from . import analysis
     from .connectors import registry, resolve
@@ -182,6 +223,11 @@ def build_parser() -> argparse.ArgumentParser:
     analyse = subparsers.add_parser('analyse', help='print the findings')
     analyse.add_argument('--estate', default='')
     analyse.set_defaults(func=cmd_analyse)
+
+    contain = subparsers.add_parser(
+        'containment', help='rank single cuts by what each one is measured to buy')
+    contain.add_argument('--estate', default='')
+    contain.set_defaults(func=cmd_containment)
 
     export = subparsers.add_parser('export', help='export the estate')
     export.add_argument('--format', choices=('stix', 'sarif', 'oscal', 'csv'),

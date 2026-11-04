@@ -48,6 +48,14 @@ def derive(estate) -> list[dict]:
     exposure = analysis.exposure(estate)
     paths = exposure.get('paths', [])
 
+    # Simulated once and reused. Each cut re-runs the whole path search, so
+    # calling this per finding would multiply the cost of deriving findings
+    # by the number of choke points.
+    contained = analysis.containment(estate)
+    by_node = {option['cut']['id']: option
+               for option in contained.get('options', [])
+               if option['kind'] == 'node'}
+
     # ---- one finding per choke point, not one per route ------------------
     # A choke point is the actionable unit: closing it removes every route
     # through it. Emitting a finding per route would be technically accurate
@@ -56,6 +64,38 @@ def derive(estate) -> list[dict]:
         through = int(choke.get('paths_through', 0))
         if through < 2:
             continue
+        # The remediation line used to say only how many routes ran through
+        # the node, which is a count rather than an outcome. What a team
+        # needs to read is whether making the cut protects anything and
+        # whether the attacker's cheapest option gets any harder, and both
+        # of those come from making the cut rather than from counting.
+        measured = by_node.get(choke['id'])
+        protects = [j['key'] for j in measured['crown_jewels_cut_off']] if measured else []
+        if measured is None:
+            remediation = ('Removing this node removes %d of the %d routes '
+                           'found.' % (through, len(paths)))
+        elif protects:
+            remediation = ('Simulated: removes %d of %d routes and puts %s out '
+                           'of reach entirely. Attacker effort for what is '
+                           'left goes from %.1f to %s.'
+                           % (measured['routes_removed'], measured['routes_before'],
+                              ', '.join(protects), measured['cheapest_before'],
+                              ('%.1f' % measured['cheapest_after']
+                               if measured['cheapest_after'] is not None
+                               else 'no route at all')))
+        elif measured['effort_added']:
+            remediation = ('Simulated: removes %d of %d routes and raises the '
+                           'attacker effort for what is left from %.1f to %.1f. '
+                           'No crown jewel goes out of reach.'
+                           % (measured['routes_removed'], measured['routes_before'],
+                              measured['cheapest_before'], measured['cheapest_after']))
+        else:
+            remediation = ('Simulated: removes %d of %d routes, but every crown '
+                           'jewel stays reachable and the cheapest route still '
+                           'costs %.1f. Worth doing, and it does not contain '
+                           'anything on its own.'
+                           % (measured['routes_removed'], measured['routes_before'],
+                              measured['cheapest_before']))
         produced.append({
             'id': fingerprint('choke-point', choke['id']),
             'fingerprint': fingerprint('choke-point', choke['id']),
@@ -66,8 +106,36 @@ def derive(estate) -> list[dict]:
             'node': choke,
             'routes': through,
             'target': 'crown jewels',
-            'remediation': ('Breaking this one node removes %d of the %d '
-                            'routes found.' % (through, len(paths))),
+            'protects_if_cut': protects,
+            'effort_added_if_cut': measured['effort_added'] if measured else None,
+            'remediation': remediation,
+        })
+
+    # ---- the one action worth doing first --------------------------------
+    # Ranked by what it was measured to remove rather than by what it sits
+    # on, and it may well be an entitlement revocation rather than a system
+    # being taken down. That comparison is the thing a count cannot make.
+    best = next(iter(contained.get('options', [])), None)
+    if best is not None and (best['crown_jewels_cut_off'] or best['fully_contained']):
+        cut = best['cut']
+        produced.append({
+            'id': fingerprint('containment', cut['id'], best['kind']),
+            'fingerprint': fingerprint('containment', cut['id'], best['kind']),
+            'kind': 'containment',
+            'severity': 'critical' if best['fully_contained'] else 'high',
+            'title': ('Best single action: %s, which puts %s out of reach'
+                      % (cut.get('action', 'cut %s' % cut.get('key')),
+                         ', '.join(j['key'] for j in best['crown_jewels_cut_off'])
+                         or 'every crown jewel')),
+            'node': cut,
+            'routes': best['routes_removed'],
+            'target': ', '.join(j['key'] for j in best['crown_jewels_cut_off']),
+            'remediation': ('Measured by making the cut and running the search '
+                            'again: %d of %d routes gone.%s'
+                            % (best['routes_removed'], best['routes_before'],
+                               '' if best['kind'] != 'entitlement' else
+                               ' This one is a grant nobody has ever exercised, '
+                               'so revoking it needs no downtime.')),
         })
 
     # ---- the cheapest route ---------------------------------------------

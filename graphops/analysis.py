@@ -167,6 +167,184 @@ def exposure(estate, max_depth=4, max_paths=400):
     }
 
 
+# How many cuts are simulated. Each one re-runs the whole path search, so
+# this is a cost ceiling and not a preference. Six is enough to show a team
+# its options without turning one request into a minute of CPU.
+MAX_CUTS_SIMULATED = 6
+
+
+def containment(estate, max_depth=4, max_paths=400, candidates=MAX_CUTS_SIMULATED):
+    """What a proposed remediation actually buys, measured rather than counted.
+
+    This answers the question a remediation meeting actually asks, which is
+    not "what is risky" but "if I can do one thing this week, which one".
+
+    WHAT COUNTING ALREADY TELLS YOU, AND WHAT IT CANNOT. The first version of
+    this docstring claimed that cutting a choke point removes fewer routes
+    than the count predicts, because traffic reroutes. That is false and it
+    is worth saying so here rather than quietly deleting it. Removing a node
+    from an enumeration of simple paths can only delete paths; it cannot
+    create one. Measured over 254 random graphs with the cap raised out of
+    the way, routes removed equalled routes counted through in every single
+    case, which is what the proof says should happen.
+
+    So the route count is NOT the reason to simulate. These are:
+
+      - WHICH CROWN JEWELS GO OUT OF REACH. A node can sit on most of the
+        routes and protect nothing, because the routes it carries all end at
+        a target that other routes still reach. A count cannot see the far
+        end of the path.
+      - WHAT THE ATTACKER'S CHEAPEST JOB THEN COSTS. Cutting the busiest
+        choke point on the demo estate leaves the cheapest route at exactly
+        the effort it was, because an unrelated route is equally cheap.
+        Removing most of the routes while making the attacker's best option
+        no harder is a result worth seeing before the change meeting, not
+        after it.
+      - WHETHER A REVOCATION WOULD DO THE SAME JOB. Entitlements are not
+        choke points and never appear in that ranking at all, so counting
+        cannot put the two kinds of cut on one list.
+      - AND THE COUNT IS SIMPLY WRONG ONCE THE ENUMERATION CAP BINDS. The
+        same experiment with the cap left at a realistic value disagreed in
+        106 of 300 trials. On an estate large enough to hit `max_paths` the
+        simulation is the only correct number, and a large estate is the
+        normal case rather than the exception.
+
+    Two kinds of cut are simulated:
+
+      - a NODE, which is the choke point taken out of service. Expensive in
+        real life, and the one worth knowing about because it is usually a
+        shared surface rather than a single system.
+      - an ENTITLEMENT, which is a dormant grant revoked. Cheap in real
+        life, reversible, and needs nobody's downtime. These come from the
+        zero-trust answer, so the list is access nobody has ever exercised.
+
+    Reported together and ranked by what they remove, because an entitlement
+    revocation that closes as many routes as a decommissioning is the one a
+    team can actually do on Monday.
+    """
+    loaded = estate.load()
+    sources = loaded.entry_points()
+    targets = loaded.crown_jewels()
+    ends = set(sources) | set(targets)
+
+    if not sources or not targets:
+        return {'routes_before': 0, 'options': [], 'reachable': False,
+                'why': ('No untrusted entry points.' if not sources
+                        else 'No asset is marked as a crown jewel yet.')}
+
+    before = alg.attack_paths(loaded.graph, sources, targets,
+                              max_depth=max_depth, max_paths=max_paths)
+    if not before:
+        return {'routes_before': 0, 'options': [], 'reachable': False,
+                'why': 'No route runs from untrusted ground to a crown jewel.'}
+
+    _best, cheapest_before = alg.cheapest_path(loaded.graph, sources, targets)
+    reached_before = {p['path'][-1] for p in before}
+
+    def measure(blocked=(), blocked_edges=()):
+        after = alg.attack_paths(loaded.graph, sources, targets,
+                                 max_depth=max_depth, max_paths=max_paths,
+                                 blocked=blocked, blocked_edges=blocked_edges)
+        _path, cost = alg.cheapest_path(loaded.graph, sources, targets,
+                                        blocked=blocked,
+                                        blocked_edges=blocked_edges)
+        return after, cost
+
+    options = []
+
+    # ---------------------------------------------------- cutting a node
+    chokes = alg.choke_points(before, exclude=ends)
+    for choke in chokes[:candidates]:
+        node = choke['node']
+        after, cheapest_after = measure(blocked={node})
+        reached_after = {p['path'][-1] for p in after}
+        described = loaded.describe(node)
+        options.append({
+            'cut': dict(described,
+                        action='take %s out of service' % described['key']),
+            'kind': 'node',
+            # The static count, kept beside the measurement precisely so the
+            # gap between them is visible rather than hidden.
+            'routes_counted_through': choke['paths_through'],
+            'routes_before': len(before),
+            'routes_after': len(after),
+            'routes_removed': len(before) - len(after),
+            'crown_jewels_cut_off': [loaded.describe(t)
+                                     for t in sorted(reached_before - reached_after)],
+            'cheapest_before': cheapest_before,
+            'cheapest_after': cheapest_after,
+            'effort_added': (None if cheapest_after is None or cheapest_before is None
+                             else round(cheapest_after - cheapest_before, 3)),
+            'fully_contained': not after,
+        })
+
+    # ------------------------------------------- revoking a dormant grant
+    # Only the ones that reach a crown jewel. Revoking a dormant grant to
+    # something nobody is attacking is tidying, not containment.
+    dormant = over_privilege(estate)['dormant']
+    for grant in dormant:
+        if len(options) >= candidates * 2:
+            break
+        if not grant['reaches_crown_jewel']:
+            continue
+        pair = (grant['identity']['id'], grant['target']['id'])
+        after, cheapest_after = measure(blocked_edges={pair})
+        if len(after) == len(before):
+            continue        # nothing to report: no route used this grant
+        reached_after = {p['path'][-1] for p in after}
+        options.append({
+            # Named by the grant rather than by the identity. Two dormant
+            # grants held by the same account are two different decisions,
+            # and "revoke support-desk" twice over says neither of them.
+            'cut': dict(grant['target'],
+                        action="revoke %s's grant on %s"
+                               % (grant['identity']['key'],
+                                  grant['target']['key']),
+                        granted_to=grant['identity']['key']),
+            'kind': 'entitlement',
+            'routes_counted_through': None,
+            'routes_before': len(before),
+            'routes_after': len(after),
+            'routes_removed': len(before) - len(after),
+            'crown_jewels_cut_off': [loaded.describe(t)
+                                     for t in sorted(reached_before - reached_after)],
+            'cheapest_before': cheapest_before,
+            'cheapest_after': cheapest_after,
+            'effort_added': (None if cheapest_after is None or cheapest_before is None
+                             else round(cheapest_after - cheapest_before, 3)),
+            'fully_contained': not after,
+        })
+
+    # Ranked by what the cut was measured to achieve, in this order:
+    #
+    #   1. full containment, meaning no route survives at all
+    #   2. how many crown jewels go out of reach entirely
+    #   3. how many routes are removed
+    #   4. how much harder the cheapest surviving route became
+    #   5. an entitlement revocation ahead of a decommissioning, on a tie,
+    #      because it needs nobody's downtime
+    #
+    # CROWN JEWELS SIT ABOVE ROUTE COUNT DELIBERATELY. Ranked the other way
+    # round first, and the demo estate put the busiest choke point on top: it
+    # removes five of twelve routes, protects nothing, and leaves the
+    # attacker's cheapest option exactly as cheap, while the cut that puts
+    # the backups permanently out of reach came sixth. Removing more routes
+    # to data that is still reachable is worth less than removing the reach.
+    options.sort(key=lambda o: (not o['fully_contained'],
+                                -len(o['crown_jewels_cut_off']),
+                                -o['routes_removed'],
+                                -(o['effort_added'] or 0.0),
+                                o['kind'] != 'entitlement'))
+
+    return {
+        'reachable': True,
+        'routes_before': len(before),
+        'cheapest_before': cheapest_before,
+        'crown_jewels_at_risk': [loaded.describe(t) for t in sorted(reached_before)],
+        'options': options,
+    }
+
+
 def novel_activity(estate, window_hours=24, max_hops=2, now=None):
     """Things that have never happened before, even where every step is normal.
 

@@ -61,6 +61,48 @@ ORDER BY through DESC, node ASC
 LIMIT $limit
 """
 
+# What one cut actually buys. The standalone copy, with the full reasoning,
+# is cypher/06-containment.cypher.
+#
+# The choke-point count says how many routes a node carries and nothing about
+# the far end of them. This makes each cut and asks again, so it can report
+# which crown jewels go out of reach and what the cheapest surviving route
+# costs. Both are invisible to a count.
+CONTAINMENT = """
+MATCH path = (a:%(L)s {zone: $untrusted})-[*1..%(depth)d]->(b:%(L)s {crown: true})
+WITH [n IN nodes(path) | n.key] AS route,
+     reduce(total = 0.0, r IN relationships(path) | total + r.cost) AS cost
+WITH route, min(cost) AS cost
+WITH collect({route: route, cost: cost, target: last(route)}) AS routes
+UNWIND routes AS before_row
+WITH routes,
+     count(*)                            AS routes_before,
+     min(before_row.cost)                AS cheapest_before,
+     collect(DISTINCT before_row.target) AS jewels_before
+UNWIND routes AS counted_row
+UNWIND counted_row.route[1..-1] AS candidate
+WITH routes, routes_before, cheapest_before, jewels_before,
+     candidate, count(*) AS routes_counted_through
+WITH routes_before, cheapest_before, jewels_before, candidate,
+     routes_counted_through,
+     [x IN routes WHERE NOT candidate IN x.route] AS survivors
+RETURN candidate,
+       routes_counted_through,
+       routes_before,
+       size(survivors)                 AS routes_after,
+       routes_before - size(survivors) AS routes_removed,
+       cheapest_before,
+       CASE WHEN size(survivors) = 0 THEN null
+            ELSE reduce(m = head(survivors).cost, x IN survivors |
+                        CASE WHEN x.cost < m THEN x.cost ELSE m END)
+       END                             AS cheapest_after,
+       [t IN jewels_before
+          WHERE NOT t IN [x IN survivors | x.target]] AS crown_jewels_cut_off,
+       size(survivors) = 0             AS fully_contained
+ORDER BY routes_removed DESC, candidate ASC
+LIMIT $limit
+"""
+
 # Blast radius. Undirected, because compromise does not respect the
 # direction a relationship happened to be recorded in, and each node is
 # reported at the SHALLOWEST hop that reaches it.
@@ -145,6 +187,13 @@ def choke_points(driver, depth=4, limit=10, database='neo4j'):
     with driver.session(database=database) as session:
         return [dict(r) for r in session.run(
             _q(CHOKE_POINTS, depth=depth),
+            untrusted=Zone.UNTRUSTED, limit=limit)]
+
+
+def containment(driver, depth=4, limit=10, database='neo4j'):
+    with driver.session(database=database) as session:
+        return [dict(r) for r in session.run(
+            _q(CONTAINMENT, depth=depth),
             untrusted=Zone.UNTRUSTED, limit=limit)]
 
 
