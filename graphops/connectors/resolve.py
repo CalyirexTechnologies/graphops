@@ -34,6 +34,7 @@ from __future__ import annotations
 import re
 
 from ..vocab import NodeKind
+from .base import combine_edges
 
 #: Nodes may only merge with nodes in the same class. Within a class the
 #: names describe the same kind of thing; across classes they never do.
@@ -140,6 +141,10 @@ def _fold(winner: dict, loser: dict) -> dict:
             continue
         if field == 'crown_source' and merged.get('crown_source'):
             continue
+        if field == 'regimes':
+            merged['regimes'] = sorted(set(merged.get('regimes') or ())
+                                       | set(value))
+            continue
         merged.setdefault(field, value)
         if field == 'crown_source':
             merged['crown_source'] = value
@@ -175,6 +180,7 @@ def resolve(estate: dict) -> dict:
 
     rewritten: list[dict] = []
     seen: set[tuple] = set()
+    positions: dict[tuple, int] = {}
     self_loops = 0
     for edge in edges:
         source = aliases.get(edge['src'], edge['src'])
@@ -185,16 +191,18 @@ def resolve(estate: dict) -> dict:
             self_loops += 1
             continue
         signature = (source, target, edge['kind'])
+        moved = dict(edge, src=source, dst=target)
         if signature in seen:
-            for existing in rewritten:
-                if (existing['src'], existing['dst'],
-                        existing['kind']) == signature:
-                    if edge.get('cost', 1.0) < existing.get('cost', 1.0):
-                        existing.update(dict(edge, src=source, dst=target))
-                    break
+            # Two names for one system each had this relationship. They are
+            # one relationship now, and both observations are kept: this is
+            # where CloudTrail's read of `nightly-backups` meets Okta's
+            # sign-on to `s3://nightly-backups`.
+            position = positions[signature]
+            rewritten[position] = combine_edges(rewritten[position], moved)
             continue
         seen.add(signature)
-        rewritten.append(dict(edge, src=source, dst=target))
+        positions[signature] = len(rewritten)
+        rewritten.append(moved)
 
     resolved = dict(estate)
     resolved['nodes'] = list(by_id.values())

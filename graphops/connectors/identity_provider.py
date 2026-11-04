@@ -86,18 +86,29 @@ class OktaConnector(Connector):
                 label = app_names.get(app_id)
                 if not label:
                     continue
+                scope = str(assignment.get('scope') or 'USER').upper()
+                last_sign_on = assignment.get('lastSignOn') or None
                 # The entitlement, recorded whether or not it has been used.
+                # `via` and `last_used` are read straight off Okta's own
+                # assignment record. A grant arriving through a group is
+                # revoked in a different place from a direct one, and a
+                # remediation that names the wrong place does not happen.
                 delta.add_edge(identity, 'svc:%s' % label, EdgeKind.ENTITLED,
                                str(assignment.get('created') or ''),
-                               scope=str(assignment.get('scope') or 'USER'))
+                               scope=scope,
+                               via='group' if scope == 'GROUP' else 'direct',
+                               permission='Okta app assignment',
+                               last_used=str(last_sign_on) if last_sign_on else None)
                 delta.stats['entitlements'] = delta.stats.get('entitlements', 0) + 1
 
-                last_seen = assignment.get('lastSignOn')
-                if last_seen:
+                if last_sign_on:
                     # Okta reporting a sign-on is the observed use that makes
-                    # the entitlement non-dormant.
+                    # the entitlement non-dormant. Named by Okta's own System
+                    # Log event type, so it reads the same as Okta's console.
                     delta.add_edge(identity, 'svc:%s' % label, EdgeKind.CALLED,
-                                   str(last_seen))
+                                   str(last_sign_on),
+                                   last_seen=str(last_sign_on),
+                                   actions=['user.authentication.sso'])
                     delta.stats['exercised'] = delta.stats.get('exercised', 0) + 1
 
             delta.stats['users'] = delta.stats.get('users', 0) + 1
@@ -158,8 +169,13 @@ class EntraIdConnector(Connector):
                 delta.add_node(identity, NodeKind.IDENTITY, name, Zone.INTERNAL,
                                label=name, source='entra',
                                principal_type='service' if is_service else 'user')
+                # The role name is the permission. Entra does not report
+                # directory role use per member here, so `last_used` is left
+                # out rather than set to None: absent means "this source does
+                # not say", and None would claim "never used".
                 delta.add_edge(identity, role_node, EdgeKind.ENTITLED,
                                str(member.get('createdDateTime') or ''),
-                               cost=1.0 if privileged else None)
+                               cost=1.0 if privileged else None,
+                               permission=role_name, via='directory role')
                 delta.stats['role_members'] = delta.stats.get('role_members', 0) + 1
         return delta

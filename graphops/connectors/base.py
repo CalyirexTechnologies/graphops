@@ -115,6 +115,57 @@ class GraphDelta:
         return len(self.nodes) + len(self.edges)
 
 
+def _earliest(a, b):
+    present = [value for value in (a, b) if value]
+    return min(present) if present else (a if a is not None else b)
+
+
+def _latest(a, b):
+    present = [value for value in (a, b) if value]
+    return max(present) if present else (a if a is not None else b)
+
+
+def combine_edges(existing: dict, incoming: dict) -> dict:
+    """Fold a second observation of one relationship into the first.
+
+    Two sources reporting the same (src, dst, kind) are two pieces of
+    evidence about one fact, and the merge has to keep both. The previous
+    rule kept whichever arrived first and dropped the other, which is how
+    CloudTrail's record of svc-deploy reading the backups vanished behind
+    Okta's record of it signing on: same edge, so one of them went.
+
+      cost        the cheapest, because two confirmations of a step do not
+                  make it harder for an attacker
+      first_seen  the earliest, which is what "first" means
+      last_seen,  the latest, which is what "last" means
+      last_used
+      actions,    the union, sorted, so the result does not depend on the
+      sources     order connectors happened to run in
+      otherwise   the first value wins and a later one fills only a gap
+
+    ISO-8601 timestamps in UTC compare correctly as strings, which is why
+    min and max are safe here without parsing.
+    """
+    merged = dict(existing)
+    merged['cost'] = min(float(existing.get('cost', 1.0)),
+                         float(incoming.get('cost', 1.0)))
+    merged['first_seen'] = _earliest(existing.get('first_seen'),
+                                     incoming.get('first_seen'))
+    for field_name in ('last_seen', 'last_used'):
+        if field_name in existing or field_name in incoming:
+            merged[field_name] = _latest(existing.get(field_name),
+                                         incoming.get(field_name))
+    for field_name in ('actions', 'sources'):
+        values = set(existing.get(field_name) or ()) | set(incoming.get(field_name) or ())
+        if values:
+            merged[field_name] = sorted(values)
+    for field_name, value in incoming.items():
+        if field_name in merged and merged[field_name] not in (None, '', []):
+            continue
+        merged[field_name] = value
+    return merged
+
+
 @dataclass
 class RunResult:
     connector: str

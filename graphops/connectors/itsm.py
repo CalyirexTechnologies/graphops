@@ -19,6 +19,12 @@ from .base import Connector, GraphDelta
 _REGULATED = frozenset({'pci', 'phi', 'pii', 'sox', 'confidential',
                         'restricted'})
 
+#: The subset that names a regulation rather than a sensitivity level.
+#: Confidential and Restricted still make a crown jewel, and they are not
+#: regimes: no regulator has a view on them, and a regime column that showed
+#: them would invite someone to scope an audit by them.
+_REGIMES = frozenset({'pci', 'phi', 'pii', 'sox'})
+
 
 class ServiceNowConnector(Connector):
     """ServiceNow CMDB configuration items and their relationships."""
@@ -59,7 +65,8 @@ class ServiceNowConnector(Connector):
             if not sys_id or not name:
                 continue
             names[sys_id] = name
-            classification = str(item.get('data_classification') or '').lower()
+            stated = str(item.get('data_classification') or '').strip()
+            classification = stated.lower()
             crown = classification in _REGULATED
             delta.add_node('asset:%s' % name, NodeKind.ASSET, name,
                            Zone.CROWN if crown else Zone.INTERNAL,
@@ -68,6 +75,11 @@ class ServiceNowConnector(Connector):
                            crown=crown, source='servicenow',
                            crown_source='servicenow.data_classification'
                                         if crown else None,
+                           # Kept as data, not only as a label suffix, so a
+                           # screen or a compliance control can filter by it.
+                           classification=stated or None,
+                           regimes=[classification.upper()]
+                                   if classification in _REGIMES else [],
                            owner=str(item.get('owned_by') or ''),
                            environment=str(item.get('used_for') or ''))
             delta.stats['configuration_items'] = \

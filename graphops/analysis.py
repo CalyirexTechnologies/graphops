@@ -32,11 +32,19 @@ def _when(value):
 
 
 class LoadedGraph:
-    """An estate's graph plus the metadata the answers have to be readable in."""
+    """An estate's graph plus the metadata the answers have to be readable in.
 
-    def __init__(self, graph, meta):
+    `meta` holds every field a source sent for a node, not a fixed few.
+    `edges_between` holds every relationship record between a pair, because
+    the adjacency map collapses an entitlement and an observed use into one
+    step, which is right for path search and wrong for asking when a grant
+    was last used.
+    """
+
+    def __init__(self, graph, meta, edges_between=None):
         self.graph = graph
-        self.meta = meta            # node id -> {kind, key, label, zone, crown}
+        self.meta = meta            # node id -> every field the sources sent
+        self.edges_between = edges_between if edges_between is not None else {}
 
     def describe(self, node_id):
         m = self.meta.get(node_id, {})
@@ -85,6 +93,21 @@ class Estate:
         self.name = payload.get('name', 'unnamed estate')
         self.nodes = payload['nodes']
         self.edges = payload['edges']
+        # The moment the data describes. A replay carries its recording time,
+        # live data the time it was ingested, and a hand-authored estate may
+        # carry neither. See `now()`.
+        stamp = payload.get('as_of')
+        self.as_of = _when(stamp) if stamp else None
+        self.mode = payload.get('mode')
+
+    def now(self, override=None):
+        """The "now" every time-relative question is asked against.
+
+        An explicit value wins, then the estate's own recording time, then
+        the real clock. Reading the real clock for a recording is how the
+        replay's newest finding used to expire on its own.
+        """
+        return override or self.as_of or datetime.now(timezone.utc)
 
     @classmethod
     def from_file(cls, path):
@@ -94,13 +117,19 @@ class Estate:
 
     def load(self, only_before=None):
         """Read the estate into memory, optionally as it was before a moment."""
-        meta = {n['id']: {'kind': n['kind'], 'key': n['key'],
-                          'label': n.get('label', n['key']),
-                          'zone': n.get('zone', Zone.INTERNAL),
-                          'crown': bool(n.get('crown', False))}
-                for n in self.nodes}
+        meta = {}
+        for n in self.nodes:
+            # Every field a source sent, with the five the engine relies on
+            # normalised. Keeping only those five is how a regime, an owner
+            # and the sources that saw a node used to disappear here.
+            record = dict(n)
+            record['label'] = n.get('label', n['key'])
+            record['zone'] = n.get('zone', Zone.INTERNAL)
+            record['crown'] = bool(n.get('crown', False))
+            meta[n['id']] = record
 
         graph = alg.Graph()
+        edges_between: dict[tuple, list] = {}
         for count, e in enumerate(self.edges):
             if count >= MAX_EDGES_IN_MEMORY:
                 break
@@ -108,7 +137,8 @@ class Estate:
                 continue
             graph.add(e['src'], e['dst'], kind=e['kind'],
                       cost=float(e.get('cost', 1.0)))
-        return LoadedGraph(graph, meta)
+            edges_between.setdefault((e['src'], e['dst']), []).append(e)
+        return LoadedGraph(graph, meta, edges_between)
 
 
 def blast_radius(estate, node_id, max_hops=3):
@@ -390,7 +420,7 @@ def novel_activity(estate, window_hours=24, max_hops=2, now=None):
     Connected anomalies are ONE incident, and reporting them as six is how a
     SOC ends up with a queue nobody can read.
     """
-    now = now or datetime.now(timezone.utc)
+    now = estate.now(now)
     cutoff = now - timedelta(hours=window_hours)
 
     current = estate.load()
@@ -481,7 +511,7 @@ def segments(estate, window_hours=24, now=None):
     analyst can say WHICH part of the business it is moving inside rather
     than reading a list of node names.
     """
-    now = now or datetime.now(timezone.utc)
+    now = estate.now(now)
     cutoff = now - timedelta(hours=window_hours)
     loaded = estate.load()
 

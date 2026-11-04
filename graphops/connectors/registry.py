@@ -22,7 +22,14 @@ import time
 import uuid
 from dataclasses import dataclass, field
 
-from .base import MODE_REPLAY, Connector, GraphDelta, OutboundConnector, RunResult
+from .base import (
+    MODE_REPLAY,
+    Connector,
+    GraphDelta,
+    OutboundConnector,
+    RunResult,
+    combine_edges,
+)
 from .cloud import CloudTrailConnector
 from .edr import CrowdStrikeConnector
 from .identity_provider import EntraIdConnector, OktaConnector
@@ -122,6 +129,12 @@ def _merge_nodes(existing: dict, incoming: dict) -> dict:
             continue
         if field_name == 'sources':
             continue
+        if field_name == 'regimes':
+            # Two sources may each know one regulation the system falls
+            # under. Keeping only the later one would quietly drop the other.
+            merged['regimes'] = sorted(set(existing.get('regimes') or ())
+                                       | set(value))
+            continue
         merged[field_name] = value
     sources = set(existing.get('sources') or [])
     for record in (existing, incoming):
@@ -137,6 +150,10 @@ def merge(deltas) -> dict:
     nodes: dict[str, dict] = {}
     edges: list[dict] = []
     seen_edges: set[tuple] = set()
+    # Position of each signature in `edges`. The previous version found a
+    # duplicate's partner by scanning the whole list, which is quadratic in
+    # the edge count and was invisible only because fixtures are small.
+    edge_index: dict[tuple, int] = {}
 
     for delta in deltas:
         for node in delta.nodes:
@@ -149,19 +166,17 @@ def merge(deltas) -> dict:
                     record['sources'] = [record['source']]
                 nodes[node_id] = record
         for edge in delta.edges:
-            # One relationship of one kind between two nodes, keeping the
-            # cheapest. Without this, two SIEM rows for the same request
-            # become two routes and every count in the product doubles.
+            # One relationship of one kind between two nodes. Without this,
+            # two SIEM rows for the same request become two routes and every
+            # count in the product doubles. The second observation is folded
+            # into the first rather than dropped; see combine_edges.
             signature = (edge['src'], edge['dst'], edge['kind'])
             if signature in seen_edges:
-                for existing in edges:
-                    if (existing['src'], existing['dst'],
-                            existing['kind']) == signature:
-                        if edge.get('cost', 1.0) < existing.get('cost', 1.0):
-                            existing.update(edge)
-                        break
+                position = edge_index[signature]
+                edges[position] = combine_edges(edges[position], edge)
                 continue
             seen_edges.add(signature)
+            edge_index[signature] = len(edges)
             edges.append(dict(edge))
 
     # An edge may name a node no connector described, for instance an asset
@@ -214,6 +229,37 @@ def ingest(keys=None, *, mode: str = MODE_REPLAY,
         result, delta = connector.run()
         runs.append(result)
         if result.status == 'success':
+            # Stamped here rather than in each connector, so no connector can
+            # forget, and so every hop of a route can say which source saw it.
+            for edge in delta.edges:
+                edge.setdefault('sources', [key])
             deltas.append(delta)
 
-    return IngestResult(estate=merge(deltas), runs=runs)
+    estate = merge(deltas)
+    estate['as_of'] = _as_of(mode)
+    estate['mode'] = mode
+    return IngestResult(estate=estate, runs=runs)
+
+
+def _as_of(mode: str) -> str:
+    """The moment an ingest's answers describe.
+
+    A replay is a recording, so it describes the moment it was recorded, and
+    every question about recent activity is asked relative to that. Without
+    this the fixtures' newest route aged out of the 24-hour window a day
+    after they were generated, and the demo's central finding vanished for
+    anyone who ran it later. Live mode describes now.
+    """
+    if mode == MODE_REPLAY:
+        import json
+
+        from .base import FIXTURE_DIR
+        stamp = FIXTURE_DIR / 'RECORDED.json'
+        try:
+            with stamp.open(encoding='utf-8') as handle:
+                recorded = json.load(handle).get('recorded_at')
+            if recorded:
+                return str(recorded)
+        except (OSError, ValueError):
+            pass        # no stamp: fall through to the real clock, as before
+    return time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())

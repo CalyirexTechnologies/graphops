@@ -321,6 +321,12 @@ BUILDERS = {
 }
 
 
+#: Where the replay's own clock is recorded. A sidecar rather than a key
+#: inside each fixture, so every fixture stays exactly in its vendor's
+#: response shape and could be swapped for a real captured response.
+RECORDED = 'RECORDED.json'
+
+
 def write_all() -> list[Path]:
     HERE.mkdir(parents=True, exist_ok=True)
     written = []
@@ -330,6 +336,18 @@ def write_all() -> list[Path]:
             json.dump(builder(), handle, indent=2, sort_keys=False)
             handle.write('\n')
         written.append(path)
+    # The moment the snapshot describes. Questions about "the last 24 hours"
+    # are asked relative to this in replay mode, or a recording's newest
+    # finding would expire a day after it was made.
+    stamp = HERE / RECORDED
+    with stamp.open('w', encoding='utf-8') as handle:
+        json.dump({'recorded_at': GENERATED.isoformat().replace('+00:00', 'Z'),
+                   'note': ('The time every fixture in this directory was '
+                            'generated against. Replay mode answers as of '
+                            'this moment; live mode uses the real clock.')},
+                  handle, indent=2)
+        handle.write('\n')
+    written.append(stamp)
     return written
 
 

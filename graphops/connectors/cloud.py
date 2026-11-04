@@ -32,6 +32,23 @@ _DATA_EVENTS = frozenset({'GetObject', 'ListObjects', 'ListObjectsV2',
 
 _CROWN_HINTS = ('backup', 'billing', 'card', 'payment', 'secret', 'payroll')
 
+#: CloudTrail's userIdentity.type, mapped to the principal types the rest of
+#: the product speaks. Only values AWS documents; anything else is left
+#: unset rather than guessed.
+_PRINCIPAL_TYPES = {'AssumedRole': 'role', 'Role': 'role', 'IAMUser': 'user',
+                    'Root': 'root', 'AWSService': 'service',
+                    'FederatedUser': 'user'}
+
+
+def _iam_action(record: dict, event: str) -> str:
+    """`s3.amazonaws.com` + `GetObject` -> `s3:GetObject`, IAM's own format.
+
+    In that form the action can be compared with a policy statement rather
+    than read as prose, which is what a revocation needs.
+    """
+    service = str(record.get('eventSource') or '').split('.', 1)[0]
+    return '%s:%s' % (service, event) if service and event else event
+
 
 class CloudTrailConnector(Connector):
     """AWS CloudTrail events, from LookupEvents or a delivered log file."""
@@ -71,8 +88,12 @@ class CloudTrailConnector(Connector):
             # An ARN is unreadable on a diagram. Keep the last segment.
             short = principal.rsplit('/', 1)[-1]
             identity = 'id:%s' % short
+            action = _iam_action(record, event)
+            principal_type = _PRINCIPAL_TYPES.get(str(identity_block.get('type') or ''))
             delta.add_node(identity, NodeKind.IDENTITY, short, Zone.INTERNAL,
-                           label=short, source='cloudtrail', arn=principal)
+                           label=short, source='cloudtrail', arn=principal,
+                           **({'principal_type': principal_type}
+                              if principal_type else {}))
 
             # AWS writes the literal string for service-initiated calls.
             if source_ip and not source_ip.endswith('.amazonaws.com'):
@@ -81,7 +102,8 @@ class CloudTrailConnector(Connector):
                 if event in _CREDENTIAL_EVENTS:
                     # Direction reversed on purpose. See the module docstring.
                     delta.add_edge('addr:%s' % source_ip, identity,
-                                   EdgeKind.YIELDS, when, event=event)
+                                   EdgeKind.YIELDS, when, event=event,
+                                   actions=[action], last_seen=when)
                     delta.stats['credential_events'] = \
                         delta.stats.get('credential_events', 0) + 1
 
@@ -98,7 +120,8 @@ class CloudTrailConnector(Connector):
                                arn=arn)
                 delta.add_edge(identity, node, EdgeKind.CALLED, when,
                                event=event,
-                               reads_data=event in _DATA_EVENTS)
+                               reads_data=event in _DATA_EVENTS,
+                               actions=[action], last_seen=when)
                 delta.stats['resource_touches'] = \
                     delta.stats.get('resource_touches', 0) + 1
             delta.stats['records'] = delta.stats.get('records', 0) + 1
