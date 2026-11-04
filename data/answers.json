@@ -519,6 +519,11 @@
   "exposure": {
     "reachable": true,
     "path_count": 12,
+    "capped": false,
+    "max_depth": 4,
+    "max_paths": 400,
+    "entry_points": 6,
+    "crown_jewels_total": 3,
     "cheapest": {
       "steps": [
         {
@@ -528,7 +533,8 @@
             "key": "192.0.2.133",
             "label": "192.0.2.133",
             "zone": "untrusted",
-            "is_crown_jewel": false
+            "is_crown_jewel": false,
+            "regimes": []
           },
           "to": {
             "id": "id-support",
@@ -536,7 +542,8 @@
             "key": "support-desk",
             "label": "support-desk",
             "zone": "internal",
-            "is_crown_jewel": false
+            "is_crown_jewel": false,
+            "regimes": []
           },
           "edge": "yields",
           "cost": 1.0,
@@ -551,7 +558,8 @@
             "key": "support-desk",
             "label": "support-desk",
             "zone": "internal",
-            "is_crown_jewel": false
+            "is_crown_jewel": false,
+            "regimes": []
           },
           "to": {
             "id": "asset-billing",
@@ -559,7 +567,8 @@
             "key": "billing-database",
             "label": "billing-database (card data)",
             "zone": "crown",
-            "is_crown_jewel": true
+            "is_crown_jewel": true,
+            "regimes": []
           },
           "edge": "entitled",
           "cost": 1.0,
@@ -580,7 +589,8 @@
               "key": "192.0.2.133",
               "label": "192.0.2.133",
               "zone": "untrusted",
-              "is_crown_jewel": false
+              "is_crown_jewel": false,
+              "regimes": []
             },
             "to": {
               "id": "id-support",
@@ -588,7 +598,8 @@
               "key": "support-desk",
               "label": "support-desk",
               "zone": "internal",
-              "is_crown_jewel": false
+              "is_crown_jewel": false,
+              "regimes": []
             },
             "edge": "yields",
             "cost": 1.0,
@@ -603,7 +614,8 @@
               "key": "support-desk",
               "label": "support-desk",
               "zone": "internal",
-              "is_crown_jewel": false
+              "is_crown_jewel": false,
+              "regimes": []
             },
             "to": {
               "id": "asset-hr",
@@ -611,7 +623,8 @@
               "key": "hr-database",
               "label": "hr-database (employee records)",
               "zone": "crown",
-              "is_crown_jewel": true
+              "is_crown_jewel": true,
+              "regimes": []
             },
             "edge": "entitled",
             "cost": 1.0,
@@ -631,7 +644,8 @@
               "key": "192.0.2.133",
               "label": "192.0.2.133",
               "zone": "untrusted",
-              "is_crown_jewel": false
+              "is_crown_jewel": false,
+              "regimes": []
             },
             "to": {
               "id": "id-support",
@@ -639,7 +653,8 @@
               "key": "support-desk",
               "label": "support-desk",
               "zone": "internal",
-              "is_crown_jewel": false
+              "is_crown_jewel": false,
+              "regimes": []
             },
             "edge": "yields",
             "cost": 1.0,
@@ -654,7 +669,8 @@
               "key": "support-desk",
               "label": "support-desk",
               "zone": "internal",
-              "is_crown_jewel": false
+              "is_crown_jewel": false,
+              "regimes": []
             },
             "to": {
               "id": "asset-billing",
@@ -662,7 +678,8 @@
               "key": "billing-database",
               "label": "billing-database (card data)",
               "zone": "crown",
-              "is_crown_jewel": true
+              "is_crown_jewel": true,
+              "regimes": []
             },
             "edge": "entitled",
             "cost": 1.0,
@@ -682,7 +699,8 @@
               "key": "192.0.2.41",
               "label": "192.0.2.41 (no rule has fired)",
               "zone": "untrusted",
-              "is_crown_jewel": false
+              "is_crown_jewel": false,
+              "regimes": []
             },
             "to": {
               "id": "id-deploy",
@@ -690,7 +708,8 @@
               "key": "svc-deploy",
               "label": "svc-deploy",
               "zone": "internal",
-              "is_crown_jewel": false
+              "is_crown_jewel": false,
+              "regimes": []
             },
             "edge": "yields",
             "cost": 1.0,
@@ -705,7 +724,8 @@
               "key": "svc-deploy",
               "label": "svc-deploy",
               "zone": "internal",
-              "is_crown_jewel": false
+              "is_crown_jewel": false,
+              "regimes": []
             },
             "to": {
               "id": "svc-backups",
@@ -713,7 +733,8 @@
               "key": "s3://nightly-backups",
               "label": "s3://nightly-backups (everything, nightly)",
               "zone": "crown",
-              "is_crown_jewel": true
+              "is_crown_jewel": true,
+              "regimes": []
             },
             "edge": "entitled",
             "cost": 1.0,
@@ -733,7 +754,8 @@
               "key": "203.0.113.77",
               "label": "203.0.113.77",
               "zone": "untrusted",
-              "is_crown_jewel": false
+              "is_crown_jewel": false,
+              "regimes": []
             },
             "to": {
               "id": "id-finance",
@@ -741,7 +763,8 @@
               "key": "finance-admin",
               "label": "finance-admin",
               "zone": "internal",
-              "is_crown_jewel": false
+              "is_crown_jewel": false,
+              "regimes": []
             },
             "edge": "yields",
             "cost": 1.0,
@@ -756,7 +779,8 @@
               "key": "finance-admin",
               "label": "finance-admin",
               "zone": "internal",
-              "is_crown_jewel": false
+              "is_crown_jewel": false,
+              "regimes": []
             },
             "to": {
               "id": "asset-hr",
@@ -764,7 +788,8 @@
               "key": "hr-database",
               "label": "hr-database (employee records)",
               "zone": "crown",
-              "is_crown_jewel": true
+              "is_crown_jewel": true,
+              "regimes": []
             },
             "edge": "serves",
             "cost": 2.0,
@@ -784,7 +809,8 @@
               "key": "198.51.100.21",
               "label": "198.51.100.21",
               "zone": "untrusted",
-              "is_crown_jewel": false
+              "is_crown_jewel": false,
+              "regimes": []
             },
             "to": {
               "id": "ep-admin",
@@ -792,7 +818,8 @@
               "key": "/admin",
               "label": "/admin",
               "zone": "perimeter",
-              "is_crown_jewel": false
+              "is_crown_jewel": false,
+              "regimes": []
             },
             "edge": "requested",
             "cost": 2.0,
@@ -807,7 +834,8 @@
               "key": "/admin",
               "label": "/admin",
               "zone": "perimeter",
-              "is_crown_jewel": false
+              "is_crown_jewel": false,
+              "regimes": []
             },
             "to": {
               "id": "asset-billing",
@@ -815,7 +843,8 @@
               "key": "billing-database",
               "label": "billing-database (card data)",
               "zone": "crown",
-              "is_crown_jewel": true
+              "is_crown_jewel": true,
+              "regimes": []
             },
             "edge": "serves",
             "cost": 3.0,
@@ -835,7 +864,8 @@
               "key": "198.51.100.21",
               "label": "198.51.100.21",
               "zone": "untrusted",
-              "is_crown_jewel": false
+              "is_crown_jewel": false,
+              "regimes": []
             },
             "to": {
               "id": "ep-orders",
@@ -843,7 +873,8 @@
               "key": "/api/orders",
               "label": "/api/orders",
               "zone": "perimeter",
-              "is_crown_jewel": false
+              "is_crown_jewel": false,
+              "regimes": []
             },
             "edge": "requested",
             "cost": 2.0,
@@ -858,7 +889,8 @@
               "key": "/api/orders",
               "label": "/api/orders",
               "zone": "perimeter",
-              "is_crown_jewel": false
+              "is_crown_jewel": false,
+              "regimes": []
             },
             "to": {
               "id": "asset-billing",
@@ -866,7 +898,8 @@
               "key": "billing-database",
               "label": "billing-database (card data)",
               "zone": "crown",
-              "is_crown_jewel": true
+              "is_crown_jewel": true,
+              "regimes": []
             },
             "edge": "serves",
             "cost": 3.0,
@@ -886,7 +919,8 @@
               "key": "198.51.100.84",
               "label": "198.51.100.84",
               "zone": "untrusted",
-              "is_crown_jewel": false
+              "is_crown_jewel": false,
+              "regimes": []
             },
             "to": {
               "id": "ep-orders",
@@ -894,7 +928,8 @@
               "key": "/api/orders",
               "label": "/api/orders",
               "zone": "perimeter",
-              "is_crown_jewel": false
+              "is_crown_jewel": false,
+              "regimes": []
             },
             "edge": "requested",
             "cost": 2.0,
@@ -909,7 +944,8 @@
               "key": "/api/orders",
               "label": "/api/orders",
               "zone": "perimeter",
-              "is_crown_jewel": false
+              "is_crown_jewel": false,
+              "regimes": []
             },
             "to": {
               "id": "asset-billing",
@@ -917,7 +953,8 @@
               "key": "billing-database",
               "label": "billing-database (card data)",
               "zone": "crown",
-              "is_crown_jewel": true
+              "is_crown_jewel": true,
+              "regimes": []
             },
             "edge": "serves",
             "cost": 3.0,
@@ -937,7 +974,8 @@
               "key": "203.0.113.9",
               "label": "203.0.113.9",
               "zone": "untrusted",
-              "is_crown_jewel": false
+              "is_crown_jewel": false,
+              "regimes": []
             },
             "to": {
               "id": "ep-admin",
@@ -945,7 +983,8 @@
               "key": "/admin",
               "label": "/admin",
               "zone": "perimeter",
-              "is_crown_jewel": false
+              "is_crown_jewel": false,
+              "regimes": []
             },
             "edge": "requested",
             "cost": 2.0,
@@ -960,7 +999,8 @@
               "key": "/admin",
               "label": "/admin",
               "zone": "perimeter",
-              "is_crown_jewel": false
+              "is_crown_jewel": false,
+              "regimes": []
             },
             "to": {
               "id": "asset-billing",
@@ -968,7 +1008,8 @@
               "key": "billing-database",
               "label": "billing-database (card data)",
               "zone": "crown",
-              "is_crown_jewel": true
+              "is_crown_jewel": true,
+              "regimes": []
             },
             "edge": "serves",
             "cost": 3.0,
@@ -988,7 +1029,8 @@
               "key": "203.0.113.9",
               "label": "203.0.113.9",
               "zone": "untrusted",
-              "is_crown_jewel": false
+              "is_crown_jewel": false,
+              "regimes": []
             },
             "to": {
               "id": "ep-orders",
@@ -996,7 +1038,8 @@
               "key": "/api/orders",
               "label": "/api/orders",
               "zone": "perimeter",
-              "is_crown_jewel": false
+              "is_crown_jewel": false,
+              "regimes": []
             },
             "edge": "requested",
             "cost": 2.0,
@@ -1011,7 +1054,8 @@
               "key": "/api/orders",
               "label": "/api/orders",
               "zone": "perimeter",
-              "is_crown_jewel": false
+              "is_crown_jewel": false,
+              "regimes": []
             },
             "to": {
               "id": "asset-billing",
@@ -1019,7 +1063,8 @@
               "key": "billing-database",
               "label": "billing-database (card data)",
               "zone": "crown",
-              "is_crown_jewel": true
+              "is_crown_jewel": true,
+              "regimes": []
             },
             "edge": "serves",
             "cost": 3.0,
@@ -1039,7 +1084,8 @@
               "key": "203.0.113.77",
               "label": "203.0.113.77",
               "zone": "untrusted",
-              "is_crown_jewel": false
+              "is_crown_jewel": false,
+              "regimes": []
             },
             "to": {
               "id": "ep-orders",
@@ -1047,7 +1093,8 @@
               "key": "/api/orders",
               "label": "/api/orders",
               "zone": "perimeter",
-              "is_crown_jewel": false
+              "is_crown_jewel": false,
+              "regimes": []
             },
             "edge": "requested",
             "cost": 2.0,
@@ -1062,7 +1109,8 @@
               "key": "/api/orders",
               "label": "/api/orders",
               "zone": "perimeter",
-              "is_crown_jewel": false
+              "is_crown_jewel": false,
+              "regimes": []
             },
             "to": {
               "id": "asset-billing",
@@ -1070,7 +1118,8 @@
               "key": "billing-database",
               "label": "billing-database (card data)",
               "zone": "crown",
-              "is_crown_jewel": true
+              "is_crown_jewel": true,
+              "regimes": []
             },
             "edge": "serves",
             "cost": 3.0,
@@ -1090,7 +1139,8 @@
               "key": "192.0.2.133",
               "label": "192.0.2.133",
               "zone": "untrusted",
-              "is_crown_jewel": false
+              "is_crown_jewel": false,
+              "regimes": []
             },
             "to": {
               "id": "ep-admin",
@@ -1098,7 +1148,8 @@
               "key": "/admin",
               "label": "/admin",
               "zone": "perimeter",
-              "is_crown_jewel": false
+              "is_crown_jewel": false,
+              "regimes": []
             },
             "edge": "requested",
             "cost": 2.0,
@@ -1113,7 +1164,8 @@
               "key": "/admin",
               "label": "/admin",
               "zone": "perimeter",
-              "is_crown_jewel": false
+              "is_crown_jewel": false,
+              "regimes": []
             },
             "to": {
               "id": "asset-billing",
@@ -1121,7 +1173,8 @@
               "key": "billing-database",
               "label": "billing-database (card data)",
               "zone": "crown",
-              "is_crown_jewel": true
+              "is_crown_jewel": true,
+              "regimes": []
             },
             "edge": "serves",
             "cost": 3.0,
@@ -1141,7 +1194,8 @@
               "key": "192.0.2.133",
               "label": "192.0.2.133",
               "zone": "untrusted",
-              "is_crown_jewel": false
+              "is_crown_jewel": false,
+              "regimes": []
             },
             "to": {
               "id": "ep-orders",
@@ -1149,7 +1203,8 @@
               "key": "/api/orders",
               "label": "/api/orders",
               "zone": "perimeter",
-              "is_crown_jewel": false
+              "is_crown_jewel": false,
+              "regimes": []
             },
             "edge": "requested",
             "cost": 2.0,
@@ -1164,7 +1219,8 @@
               "key": "/api/orders",
               "label": "/api/orders",
               "zone": "perimeter",
-              "is_crown_jewel": false
+              "is_crown_jewel": false,
+              "regimes": []
             },
             "to": {
               "id": "asset-billing",
@@ -1172,7 +1228,8 @@
               "key": "billing-database",
               "label": "billing-database (card data)",
               "zone": "crown",
-              "is_crown_jewel": true
+              "is_crown_jewel": true,
+              "regimes": []
             },
             "edge": "serves",
             "cost": 3.0,
@@ -1184,6 +1241,38 @@
         "cost": 5.0
       }
     ],
+    "targets": [
+      {
+        "id": "asset-billing",
+        "kind": "asset",
+        "key": "billing-database",
+        "label": "billing-database (card data)",
+        "zone": "crown",
+        "is_crown_jewel": true,
+        "regimes": [],
+        "routes": 9
+      },
+      {
+        "id": "asset-hr",
+        "kind": "asset",
+        "key": "hr-database",
+        "label": "hr-database (employee records)",
+        "zone": "crown",
+        "is_crown_jewel": true,
+        "regimes": [],
+        "routes": 2
+      },
+      {
+        "id": "svc-backups",
+        "kind": "service",
+        "key": "s3://nightly-backups",
+        "label": "s3://nightly-backups (everything, nightly)",
+        "zone": "crown",
+        "is_crown_jewel": true,
+        "regimes": [],
+        "routes": 1
+      }
+    ],
     "choke_points": [
       {
         "id": "ep-orders",
@@ -1192,6 +1281,7 @@
         "label": "/api/orders",
         "zone": "perimeter",
         "is_crown_jewel": false,
+        "regimes": [],
         "paths_through": 5,
         "share": 0.4167
       },
@@ -1202,6 +1292,7 @@
         "label": "/admin",
         "zone": "perimeter",
         "is_crown_jewel": false,
+        "regimes": [],
         "paths_through": 3,
         "share": 0.25
       },
@@ -1212,6 +1303,7 @@
         "label": "support-desk",
         "zone": "internal",
         "is_crown_jewel": false,
+        "regimes": [],
         "paths_through": 2,
         "share": 0.1667
       },
@@ -1222,6 +1314,7 @@
         "label": "svc-deploy",
         "zone": "internal",
         "is_crown_jewel": false,
+        "regimes": [],
         "paths_through": 1,
         "share": 0.0833
       },
@@ -1232,6 +1325,7 @@
         "label": "finance-admin",
         "zone": "internal",
         "is_crown_jewel": false,
+        "regimes": [],
         "paths_through": 1,
         "share": 0.0833
       }
@@ -1244,7 +1338,8 @@
       "key": "order-service",
       "label": "order-service",
       "zone": "internal",
-      "is_crown_jewel": false
+      "is_crown_jewel": false,
+      "regimes": []
     },
     "hops": {
       "1": [
@@ -1254,7 +1349,8 @@
           "key": "CVE-2026-0442 (order-service, deserialisation)",
           "label": "CVE-2026-0442 (order-service, deserialisation)",
           "zone": "internal",
-          "is_crown_jewel": false
+          "is_crown_jewel": false,
+          "regimes": []
         },
         {
           "id": "ep-orders",
@@ -1262,7 +1358,8 @@
           "key": "/api/orders",
           "label": "/api/orders",
           "zone": "perimeter",
-          "is_crown_jewel": false
+          "is_crown_jewel": false,
+          "regimes": []
         }
       ],
       "2": [
@@ -1272,7 +1369,8 @@
           "key": "billing-database",
           "label": "billing-database (card data)",
           "zone": "crown",
-          "is_crown_jewel": true
+          "is_crown_jewel": true,
+          "regimes": []
         },
         {
           "id": "ip-scan-1",
@@ -1280,7 +1378,8 @@
           "key": "198.51.100.21",
           "label": "198.51.100.21",
           "zone": "untrusted",
-          "is_crown_jewel": false
+          "is_crown_jewel": false,
+          "regimes": []
         },
         {
           "id": "ip-scan-2",
@@ -1288,7 +1387,8 @@
           "key": "198.51.100.84",
           "label": "198.51.100.84",
           "zone": "untrusted",
-          "is_crown_jewel": false
+          "is_crown_jewel": false,
+          "regimes": []
         },
         {
           "id": "ip-scan-3",
@@ -1296,7 +1396,8 @@
           "key": "203.0.113.9",
           "label": "203.0.113.9",
           "zone": "untrusted",
-          "is_crown_jewel": false
+          "is_crown_jewel": false,
+          "regimes": []
         },
         {
           "id": "ip-scan-4",
@@ -1304,7 +1405,8 @@
           "key": "203.0.113.77",
           "label": "203.0.113.77",
           "zone": "untrusted",
-          "is_crown_jewel": false
+          "is_crown_jewel": false,
+          "regimes": []
         },
         {
           "id": "ip-bruteforce",
@@ -1312,7 +1414,8 @@
           "key": "192.0.2.133",
           "label": "192.0.2.133",
           "zone": "untrusted",
-          "is_crown_jewel": false
+          "is_crown_jewel": false,
+          "regimes": []
         }
       ],
       "3": [
@@ -1322,7 +1425,8 @@
           "key": "/admin",
           "label": "/admin",
           "zone": "perimeter",
-          "is_crown_jewel": false
+          "is_crown_jewel": false,
+          "regimes": []
         },
         {
           "id": "ep-webhook",
@@ -1330,7 +1434,8 @@
           "key": "/webhook/payments",
           "label": "/webhook/payments",
           "zone": "perimeter",
-          "is_crown_jewel": false
+          "is_crown_jewel": false,
+          "regimes": []
         },
         {
           "id": "id-support",
@@ -1338,7 +1443,8 @@
           "key": "support-desk",
           "label": "support-desk",
           "zone": "internal",
-          "is_crown_jewel": false
+          "is_crown_jewel": false,
+          "regimes": []
         },
         {
           "id": "ep-login",
@@ -1346,7 +1452,8 @@
           "key": "/login",
           "label": "/login",
           "zone": "perimeter",
-          "is_crown_jewel": false
+          "is_crown_jewel": false,
+          "regimes": []
         },
         {
           "id": "rule-scan",
@@ -1354,7 +1461,8 @@
           "key": "path-enumeration",
           "label": "path-enumeration",
           "zone": "internal",
-          "is_crown_jewel": false
+          "is_crown_jewel": false,
+          "regimes": []
         },
         {
           "id": "ep-upload",
@@ -1362,7 +1470,8 @@
           "key": "/api/uploads",
           "label": "/api/uploads",
           "zone": "perimeter",
-          "is_crown_jewel": false
+          "is_crown_jewel": false,
+          "regimes": []
         },
         {
           "id": "id-finance",
@@ -1370,7 +1479,8 @@
           "key": "finance-admin",
           "label": "finance-admin",
           "zone": "internal",
-          "is_crown_jewel": false
+          "is_crown_jewel": false,
+          "regimes": []
         },
         {
           "id": "rule-bruteforce",
@@ -1378,7 +1488,8 @@
           "key": "repeated-auth-failure",
           "label": "repeated-auth-failure",
           "zone": "internal",
-          "is_crown_jewel": false
+          "is_crown_jewel": false,
+          "regimes": []
         }
       ]
     },
@@ -1390,7 +1501,8 @@
         "key": "billing-database",
         "label": "billing-database (card data)",
         "zone": "crown",
-        "is_crown_jewel": true
+        "is_crown_jewel": true,
+        "regimes": []
       }
     ]
   },
@@ -1404,7 +1516,8 @@
           "key": "192.0.2.41",
           "label": "192.0.2.41 (no rule has fired)",
           "zone": "untrusted",
-          "is_crown_jewel": false
+          "is_crown_jewel": false,
+          "regimes": []
         },
         "to": {
           "id": "id-deploy",
@@ -1412,7 +1525,8 @@
           "key": "svc-deploy",
           "label": "svc-deploy",
           "zone": "internal",
-          "is_crown_jewel": false
+          "is_crown_jewel": false,
+          "regimes": []
         },
         "edge": "yields",
         "first_seen": "2026-11-03T04:00:00+00:00"
@@ -1424,7 +1538,8 @@
           "key": "svc-deploy",
           "label": "svc-deploy",
           "zone": "internal",
-          "is_crown_jewel": false
+          "is_crown_jewel": false,
+          "regimes": []
         },
         "to": {
           "id": "svc-backups",
@@ -1432,7 +1547,8 @@
           "key": "s3://nightly-backups",
           "label": "s3://nightly-backups (everything, nightly)",
           "zone": "crown",
-          "is_crown_jewel": true
+          "is_crown_jewel": true,
+          "regimes": []
         },
         "edge": "called",
         "first_seen": "2026-11-03T04:00:00+00:00"
@@ -1447,7 +1563,8 @@
           "key": "192.0.2.41",
           "label": "192.0.2.41 (no rule has fired)",
           "zone": "untrusted",
-          "is_crown_jewel": false
+          "is_crown_jewel": false,
+          "regimes": []
         },
         "target": {
           "id": "svc-backups",
@@ -1455,7 +1572,8 @@
           "key": "s3://nightly-backups",
           "label": "s3://nightly-backups (everything, nightly)",
           "zone": "crown",
-          "is_crown_jewel": true
+          "is_crown_jewel": true,
+          "regimes": []
         },
         "steps": [
           {
@@ -1465,7 +1583,8 @@
               "key": "192.0.2.41",
               "label": "192.0.2.41 (no rule has fired)",
               "zone": "untrusted",
-              "is_crown_jewel": false
+              "is_crown_jewel": false,
+              "regimes": []
             },
             "to": {
               "id": "id-deploy",
@@ -1473,7 +1592,8 @@
               "key": "svc-deploy",
               "label": "svc-deploy",
               "zone": "internal",
-              "is_crown_jewel": false
+              "is_crown_jewel": false,
+              "regimes": []
             },
             "edge": "yields",
             "cost": 1.0,
@@ -1488,7 +1608,8 @@
               "key": "svc-deploy",
               "label": "svc-deploy",
               "zone": "internal",
-              "is_crown_jewel": false
+              "is_crown_jewel": false,
+              "regimes": []
             },
             "to": {
               "id": "svc-backups",
@@ -1496,7 +1617,8 @@
               "key": "s3://nightly-backups",
               "label": "s3://nightly-backups (everything, nightly)",
               "zone": "crown",
-              "is_crown_jewel": true
+              "is_crown_jewel": true,
+              "regimes": []
             },
             "edge": "entitled",
             "cost": 1.0,
@@ -1514,7 +1636,8 @@
           "key": "192.0.2.41",
           "label": "192.0.2.41 (no rule has fired)",
           "zone": "untrusted",
-          "is_crown_jewel": false
+          "is_crown_jewel": false,
+          "regimes": []
         },
         "target": {
           "id": "svc-iam",
@@ -1522,7 +1645,8 @@
           "key": "iam",
           "label": "iam",
           "zone": "internal",
-          "is_crown_jewel": false
+          "is_crown_jewel": false,
+          "regimes": []
         },
         "steps": [
           {
@@ -1532,7 +1656,8 @@
               "key": "192.0.2.41",
               "label": "192.0.2.41 (no rule has fired)",
               "zone": "untrusted",
-              "is_crown_jewel": false
+              "is_crown_jewel": false,
+              "regimes": []
             },
             "to": {
               "id": "id-deploy",
@@ -1540,7 +1665,8 @@
               "key": "svc-deploy",
               "label": "svc-deploy",
               "zone": "internal",
-              "is_crown_jewel": false
+              "is_crown_jewel": false,
+              "regimes": []
             },
             "edge": "yields",
             "cost": 1.0,
@@ -1555,7 +1681,8 @@
               "key": "svc-deploy",
               "label": "svc-deploy",
               "zone": "internal",
-              "is_crown_jewel": false
+              "is_crown_jewel": false,
+              "regimes": []
             },
             "to": {
               "id": "svc-iam",
@@ -1563,7 +1690,8 @@
               "key": "iam",
               "label": "iam",
               "zone": "internal",
-              "is_crown_jewel": false
+              "is_crown_jewel": false,
+              "regimes": []
             },
             "edge": "called",
             "cost": 1.0,
@@ -1581,7 +1709,8 @@
           "key": "svc-deploy",
           "label": "svc-deploy",
           "zone": "internal",
-          "is_crown_jewel": false
+          "is_crown_jewel": false,
+          "regimes": []
         },
         "target": {
           "id": "ep-login",
@@ -1589,7 +1718,8 @@
           "key": "/login",
           "label": "/login",
           "zone": "perimeter",
-          "is_crown_jewel": false
+          "is_crown_jewel": false,
+          "regimes": []
         },
         "steps": [],
         "unflagged_by_rules": false
@@ -1604,7 +1734,8 @@
           "key": "svc-deploy",
           "label": "svc-deploy",
           "zone": "internal",
-          "is_crown_jewel": false
+          "is_crown_jewel": false,
+          "regimes": []
         },
         {
           "id": "ip-quiet",
@@ -1612,7 +1743,8 @@
           "key": "192.0.2.41",
           "label": "192.0.2.41 (no rule has fired)",
           "zone": "untrusted",
-          "is_crown_jewel": false
+          "is_crown_jewel": false,
+          "regimes": []
         },
         {
           "id": "svc-backups",
@@ -1620,7 +1752,8 @@
           "key": "s3://nightly-backups",
           "label": "s3://nightly-backups (everything, nightly)",
           "zone": "crown",
-          "is_crown_jewel": true
+          "is_crown_jewel": true,
+          "regimes": []
         }
       ]
     ]
@@ -1633,7 +1766,11 @@
       "label": "/api/orders",
       "zone": "perimeter",
       "is_crown_jewel": false,
-      "score": 0.053894
+      "regimes": [],
+      "score": 0.053894,
+      "facing_internet": true,
+      "routes_through": 5,
+      "crown_jewels_reached": 1
     },
     {
       "id": "ep-login",
@@ -1642,7 +1779,11 @@
       "label": "/login",
       "zone": "perimeter",
       "is_crown_jewel": false,
-      "score": 0.049782
+      "regimes": [],
+      "score": 0.049782,
+      "facing_internet": true,
+      "routes_through": 0,
+      "crown_jewels_reached": 0
     },
     {
       "id": "ep-upload",
@@ -1651,7 +1792,11 @@
       "label": "/api/uploads",
       "zone": "perimeter",
       "is_crown_jewel": false,
-      "score": 0.049782
+      "regimes": [],
+      "score": 0.049782,
+      "facing_internet": true,
+      "routes_through": 0,
+      "crown_jewels_reached": 0
     },
     {
       "id": "id-support",
@@ -1660,7 +1805,11 @@
       "label": "support-desk",
       "zone": "internal",
       "is_crown_jewel": false,
-      "score": 0.039913
+      "regimes": [],
+      "score": 0.039913,
+      "facing_internet": true,
+      "routes_through": 2,
+      "crown_jewels_reached": 2
     },
     {
       "id": "asset-files",
@@ -1669,12 +1818,18 @@
       "label": "file-store",
       "zone": "internal",
       "is_crown_jewel": false,
-      "score": 0.0358
+      "regimes": [],
+      "score": 0.0358,
+      "facing_internet": false,
+      "routes_through": 0,
+      "crown_jewels_reached": 0
     }
   ],
   "segments": [
     {
       "size": 7,
+      "label": "2 addresses, 2 endpoints, 1 asset",
+      "shared": null,
       "members": [
         {
           "id": "asset-orders",
@@ -1682,7 +1837,8 @@
           "key": "order-service",
           "label": "order-service",
           "zone": "internal",
-          "is_crown_jewel": false
+          "is_crown_jewel": false,
+          "regimes": []
         },
         {
           "id": "cve-orders",
@@ -1690,7 +1846,8 @@
           "key": "CVE-2026-0442 (order-service, deserialisation)",
           "label": "CVE-2026-0442 (order-service, deserialisation)",
           "zone": "internal",
-          "is_crown_jewel": false
+          "is_crown_jewel": false,
+          "regimes": []
         },
         {
           "id": "ep-admin",
@@ -1698,7 +1855,8 @@
           "key": "/admin",
           "label": "/admin",
           "zone": "perimeter",
-          "is_crown_jewel": false
+          "is_crown_jewel": false,
+          "regimes": []
         },
         {
           "id": "ep-orders",
@@ -1706,7 +1864,8 @@
           "key": "/api/orders",
           "label": "/api/orders",
           "zone": "perimeter",
-          "is_crown_jewel": false
+          "is_crown_jewel": false,
+          "regimes": []
         },
         {
           "id": "ip-scan-1",
@@ -1714,7 +1873,8 @@
           "key": "198.51.100.21",
           "label": "198.51.100.21",
           "zone": "untrusted",
-          "is_crown_jewel": false
+          "is_crown_jewel": false,
+          "regimes": []
         },
         {
           "id": "ip-scan-3",
@@ -1722,7 +1882,8 @@
           "key": "203.0.113.9",
           "label": "203.0.113.9",
           "zone": "untrusted",
-          "is_crown_jewel": false
+          "is_crown_jewel": false,
+          "regimes": []
         },
         {
           "id": "rule-scan",
@@ -1730,7 +1891,8 @@
           "key": "path-enumeration",
           "label": "path-enumeration",
           "zone": "internal",
-          "is_crown_jewel": false
+          "is_crown_jewel": false,
+          "regimes": []
         }
       ],
       "crown_jewels": [],
@@ -1738,6 +1900,8 @@
     },
     {
       "size": 6,
+      "label": "2 assets, 1 address, 1 endpoint",
+      "shared": null,
       "members": [
         {
           "id": "asset-billing",
@@ -1745,7 +1909,8 @@
           "key": "billing-database",
           "label": "billing-database (card data)",
           "zone": "crown",
-          "is_crown_jewel": true
+          "is_crown_jewel": true,
+          "regimes": []
         },
         {
           "id": "asset-hr",
@@ -1753,7 +1918,8 @@
           "key": "hr-database",
           "label": "hr-database (employee records)",
           "zone": "crown",
-          "is_crown_jewel": true
+          "is_crown_jewel": true,
+          "regimes": []
         },
         {
           "id": "ep-webhook",
@@ -1761,7 +1927,8 @@
           "key": "/webhook/payments",
           "label": "/webhook/payments",
           "zone": "perimeter",
-          "is_crown_jewel": false
+          "is_crown_jewel": false,
+          "regimes": []
         },
         {
           "id": "id-support",
@@ -1769,7 +1936,8 @@
           "key": "support-desk",
           "label": "support-desk",
           "zone": "internal",
-          "is_crown_jewel": false
+          "is_crown_jewel": false,
+          "regimes": []
         },
         {
           "id": "ip-bruteforce",
@@ -1777,7 +1945,8 @@
           "key": "192.0.2.133",
           "label": "192.0.2.133",
           "zone": "untrusted",
-          "is_crown_jewel": false
+          "is_crown_jewel": false,
+          "regimes": []
         },
         {
           "id": "rule-bruteforce",
@@ -1785,7 +1954,8 @@
           "key": "repeated-auth-failure",
           "label": "repeated-auth-failure",
           "zone": "internal",
-          "is_crown_jewel": false
+          "is_crown_jewel": false,
+          "regimes": []
         }
       ],
       "crown_jewels": [
@@ -1795,7 +1965,8 @@
           "key": "billing-database",
           "label": "billing-database (card data)",
           "zone": "crown",
-          "is_crown_jewel": true
+          "is_crown_jewel": true,
+          "regimes": []
         },
         {
           "id": "asset-hr",
@@ -1803,13 +1974,16 @@
           "key": "hr-database",
           "label": "hr-database (employee records)",
           "zone": "crown",
-          "is_crown_jewel": true
+          "is_crown_jewel": true,
+          "regimes": []
         }
       ],
       "has_new_activity": false
     },
     {
       "size": 5,
+      "label": "1 address, 1 asset, 1 endpoint",
+      "shared": null,
       "members": [
         {
           "id": "asset-files",
@@ -1817,7 +1991,8 @@
           "key": "file-store",
           "label": "file-store",
           "zone": "internal",
-          "is_crown_jewel": false
+          "is_crown_jewel": false,
+          "regimes": []
         },
         {
           "id": "cve-upload",
@@ -1825,7 +2000,8 @@
           "key": "CVE-2026-1188 (file-store, unauthenticated upload)",
           "label": "CVE-2026-1188 (file-store, unauthenticated upload)",
           "zone": "internal",
-          "is_crown_jewel": false
+          "is_crown_jewel": false,
+          "regimes": []
         },
         {
           "id": "ep-upload",
@@ -1833,7 +2009,8 @@
           "key": "/api/uploads",
           "label": "/api/uploads",
           "zone": "perimeter",
-          "is_crown_jewel": false
+          "is_crown_jewel": false,
+          "regimes": []
         },
         {
           "id": "id-finance",
@@ -1841,7 +2018,8 @@
           "key": "finance-admin",
           "label": "finance-admin",
           "zone": "internal",
-          "is_crown_jewel": false
+          "is_crown_jewel": false,
+          "regimes": []
         },
         {
           "id": "ip-scan-4",
@@ -1849,7 +2027,8 @@
           "key": "203.0.113.77",
           "label": "203.0.113.77",
           "zone": "untrusted",
-          "is_crown_jewel": false
+          "is_crown_jewel": false,
+          "regimes": []
         }
       ],
       "crown_jewels": [],
@@ -1857,6 +2036,8 @@
     },
     {
       "size": 4,
+      "label": "1 address, 1 asset, 1 endpoint",
+      "shared": null,
       "members": [
         {
           "id": "asset-web",
@@ -1864,7 +2045,8 @@
           "key": "storefront-web",
           "label": "storefront-web",
           "zone": "internal",
-          "is_crown_jewel": false
+          "is_crown_jewel": false,
+          "regimes": []
         },
         {
           "id": "cve-web",
@@ -1872,7 +2054,8 @@
           "key": "CVE-2025-9910 (storefront-web, outdated TLS library)",
           "label": "CVE-2025-9910 (storefront-web, outdated TLS library)",
           "zone": "internal",
-          "is_crown_jewel": false
+          "is_crown_jewel": false,
+          "regimes": []
         },
         {
           "id": "ep-login",
@@ -1880,7 +2063,8 @@
           "key": "/login",
           "label": "/login",
           "zone": "perimeter",
-          "is_crown_jewel": false
+          "is_crown_jewel": false,
+          "regimes": []
         },
         {
           "id": "ip-scan-2",
@@ -1888,7 +2072,8 @@
           "key": "198.51.100.84",
           "label": "198.51.100.84",
           "zone": "untrusted",
-          "is_crown_jewel": false
+          "is_crown_jewel": false,
+          "regimes": []
         }
       ],
       "crown_jewels": [],
@@ -1896,6 +2081,8 @@
     },
     {
       "size": 3,
+      "label": "1 address, 1 identity, 1 service",
+      "shared": null,
       "members": [
         {
           "id": "id-deploy",
@@ -1903,7 +2090,8 @@
           "key": "svc-deploy",
           "label": "svc-deploy",
           "zone": "internal",
-          "is_crown_jewel": false
+          "is_crown_jewel": false,
+          "regimes": []
         },
         {
           "id": "ip-quiet",
@@ -1911,7 +2099,8 @@
           "key": "192.0.2.41",
           "label": "192.0.2.41 (no rule has fired)",
           "zone": "untrusted",
-          "is_crown_jewel": false
+          "is_crown_jewel": false,
+          "regimes": []
         },
         {
           "id": "svc-iam",
@@ -1919,7 +2108,8 @@
           "key": "iam",
           "label": "iam",
           "zone": "internal",
-          "is_crown_jewel": false
+          "is_crown_jewel": false,
+          "regimes": []
         }
       ],
       "crown_jewels": [],
@@ -1927,6 +2117,8 @@
     },
     {
       "size": 2,
+      "label": "1 identity, 1 service",
+      "shared": null,
       "members": [
         {
           "id": "id-backup",
@@ -1934,7 +2126,8 @@
           "key": "svc-backup",
           "label": "svc-backup",
           "zone": "internal",
-          "is_crown_jewel": false
+          "is_crown_jewel": false,
+          "regimes": []
         },
         {
           "id": "svc-backups",
@@ -1942,7 +2135,8 @@
           "key": "s3://nightly-backups",
           "label": "s3://nightly-backups (everything, nightly)",
           "zone": "crown",
-          "is_crown_jewel": true
+          "is_crown_jewel": true,
+          "regimes": []
         }
       ],
       "crown_jewels": [
@@ -1952,7 +2146,8 @@
           "key": "s3://nightly-backups",
           "label": "s3://nightly-backups (everything, nightly)",
           "zone": "crown",
-          "is_crown_jewel": true
+          "is_crown_jewel": true,
+          "regimes": []
         }
       ],
       "has_new_activity": true
@@ -1961,7 +2156,17 @@
   "privilege": {
     "granted": 6,
     "exercised": 4,
-    "dormant": [
+    "unverified": 0,
+    "by_status": {
+      "used": 4,
+      "idle": 0,
+      "never": 2,
+      "unknown": 0
+    },
+    "dormant_reaching_crown_jewels": 2,
+    "idle_after_days": 90,
+    "as_of": "2026-11-03T09:00:00+00:00",
+    "grants": [
       {
         "identity": {
           "id": "id-support",
@@ -1969,7 +2174,8 @@
           "key": "support-desk",
           "label": "support-desk",
           "zone": "internal",
-          "is_crown_jewel": false
+          "is_crown_jewel": false,
+          "regimes": []
         },
         "target": {
           "id": "asset-billing",
@@ -1977,9 +2183,18 @@
           "key": "billing-database",
           "label": "billing-database (card data)",
           "zone": "crown",
-          "is_crown_jewel": true
+          "is_crown_jewel": true,
+          "regimes": []
         },
-        "reaches_crown_jewel": true
+        "permission": null,
+        "via": null,
+        "granted_at": "2026-09-24T09:00:00+00:00",
+        "last_used": null,
+        "idle_days": null,
+        "status": "never",
+        "reaches_crown_jewel": true,
+        "routes_through": 1,
+        "sources": []
       },
       {
         "identity": {
@@ -1988,7 +2203,8 @@
           "key": "support-desk",
           "label": "support-desk",
           "zone": "internal",
-          "is_crown_jewel": false
+          "is_crown_jewel": false,
+          "regimes": []
         },
         "target": {
           "id": "asset-hr",
@@ -1996,9 +2212,194 @@
           "key": "hr-database",
           "label": "hr-database (employee records)",
           "zone": "crown",
-          "is_crown_jewel": true
+          "is_crown_jewel": true,
+          "regimes": []
         },
-        "reaches_crown_jewel": true
+        "permission": null,
+        "via": null,
+        "granted_at": "2026-09-24T09:00:00+00:00",
+        "last_used": null,
+        "idle_days": null,
+        "status": "never",
+        "reaches_crown_jewel": true,
+        "routes_through": 1,
+        "sources": []
+      },
+      {
+        "identity": {
+          "id": "id-deploy",
+          "kind": "identity",
+          "key": "svc-deploy",
+          "label": "svc-deploy",
+          "zone": "internal",
+          "is_crown_jewel": false,
+          "regimes": []
+        },
+        "target": {
+          "id": "svc-backups",
+          "kind": "service",
+          "key": "s3://nightly-backups",
+          "label": "s3://nightly-backups (everything, nightly)",
+          "zone": "crown",
+          "is_crown_jewel": true,
+          "regimes": []
+        },
+        "permission": null,
+        "via": null,
+        "granted_at": "2026-09-24T09:00:00+00:00",
+        "last_used": "2026-11-03T04:00:00+00:00",
+        "idle_days": 0,
+        "status": "used",
+        "reaches_crown_jewel": true,
+        "routes_through": 1,
+        "sources": []
+      },
+      {
+        "identity": {
+          "id": "id-backup",
+          "kind": "identity",
+          "key": "svc-backup",
+          "label": "svc-backup",
+          "zone": "internal",
+          "is_crown_jewel": false,
+          "regimes": []
+        },
+        "target": {
+          "id": "svc-backups",
+          "kind": "service",
+          "key": "s3://nightly-backups",
+          "label": "s3://nightly-backups (everything, nightly)",
+          "zone": "crown",
+          "is_crown_jewel": true,
+          "regimes": []
+        },
+        "permission": null,
+        "via": null,
+        "granted_at": "2026-09-24T09:00:00+00:00",
+        "last_used": "2026-09-24T09:00:00+00:00",
+        "idle_days": 40,
+        "status": "used",
+        "reaches_crown_jewel": true,
+        "routes_through": 0,
+        "sources": []
+      },
+      {
+        "identity": {
+          "id": "id-support",
+          "kind": "identity",
+          "key": "support-desk",
+          "label": "support-desk",
+          "zone": "internal",
+          "is_crown_jewel": false,
+          "regimes": []
+        },
+        "target": {
+          "id": "svc-iam",
+          "kind": "service",
+          "key": "iam",
+          "label": "iam",
+          "zone": "internal",
+          "is_crown_jewel": false,
+          "regimes": []
+        },
+        "permission": null,
+        "via": null,
+        "granted_at": "2026-09-24T09:00:00+00:00",
+        "last_used": "2026-09-24T09:00:00+00:00",
+        "idle_days": 40,
+        "status": "used",
+        "reaches_crown_jewel": false,
+        "routes_through": 0,
+        "sources": []
+      },
+      {
+        "identity": {
+          "id": "id-deploy",
+          "kind": "identity",
+          "key": "svc-deploy",
+          "label": "svc-deploy",
+          "zone": "internal",
+          "is_crown_jewel": false,
+          "regimes": []
+        },
+        "target": {
+          "id": "svc-iam",
+          "kind": "service",
+          "key": "iam",
+          "label": "iam",
+          "zone": "internal",
+          "is_crown_jewel": false,
+          "regimes": []
+        },
+        "permission": null,
+        "via": null,
+        "granted_at": "2026-09-24T09:00:00+00:00",
+        "last_used": "2026-09-24T09:00:00+00:00",
+        "idle_days": 40,
+        "status": "used",
+        "reaches_crown_jewel": false,
+        "routes_through": 0,
+        "sources": []
+      }
+    ],
+    "dormant": [
+      {
+        "identity": {
+          "id": "id-support",
+          "kind": "identity",
+          "key": "support-desk",
+          "label": "support-desk",
+          "zone": "internal",
+          "is_crown_jewel": false,
+          "regimes": []
+        },
+        "target": {
+          "id": "asset-billing",
+          "kind": "asset",
+          "key": "billing-database",
+          "label": "billing-database (card data)",
+          "zone": "crown",
+          "is_crown_jewel": true,
+          "regimes": []
+        },
+        "permission": null,
+        "via": null,
+        "granted_at": "2026-09-24T09:00:00+00:00",
+        "last_used": null,
+        "idle_days": null,
+        "status": "never",
+        "reaches_crown_jewel": true,
+        "routes_through": 1,
+        "sources": []
+      },
+      {
+        "identity": {
+          "id": "id-support",
+          "kind": "identity",
+          "key": "support-desk",
+          "label": "support-desk",
+          "zone": "internal",
+          "is_crown_jewel": false,
+          "regimes": []
+        },
+        "target": {
+          "id": "asset-hr",
+          "kind": "asset",
+          "key": "hr-database",
+          "label": "hr-database (employee records)",
+          "zone": "crown",
+          "is_crown_jewel": true,
+          "regimes": []
+        },
+        "permission": null,
+        "via": null,
+        "granted_at": "2026-09-24T09:00:00+00:00",
+        "last_used": null,
+        "idle_days": null,
+        "status": "never",
+        "reaches_crown_jewel": true,
+        "routes_through": 1,
+        "sources": []
       }
     ]
   }

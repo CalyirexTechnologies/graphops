@@ -169,13 +169,15 @@ class EntraIdConnector(Connector):
                 delta.add_node(identity, NodeKind.IDENTITY, name, Zone.INTERNAL,
                                label=name, source='entra',
                                principal_type='service' if is_service else 'user')
-                # The role name is the permission. Entra does not report
-                # directory role use per member here, so `last_used` is left
-                # out rather than set to None: absent means "this source does
-                # not say", and None would claim "never used".
+                # The role name is the permission. Entra's role listing does
+                # not report whether a member ever uses the role, and the
+                # edge says so explicitly. Without that, a membership with no
+                # observed use read as "never used", a claim nobody had any
+                # evidence for.
                 delta.add_edge(identity, role_node, EdgeKind.ENTITLED,
                                str(member.get('createdDateTime') or ''),
                                cost=1.0 if privileged else None,
-                               permission=role_name, via='directory role')
+                               permission=role_name, via='directory role',
+                               usage_reported=False)
                 delta.stats['role_members'] = delta.stats.get('role_members', 0) + 1
         return delta

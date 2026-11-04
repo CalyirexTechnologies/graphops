@@ -161,10 +161,37 @@ def derive(estate) -> list[dict]:
             })
 
     # ---- standing access nobody uses ------------------------------------
-    for dormant in analysis.over_privilege(estate).get('dormant', []):
-        identity = dormant.get('identity', {})
-        target = dormant.get('target', {})
-        reaches = bool(dormant.get('reaches_crown_jewel'))
+    # One finding per grant that is dormant, and one per privileged grant
+    # nothing reports on. The title says which of those it is. "Never used"
+    # is a claim and is made only where a source reports use; "not used in
+    # 200 days" is a different finding with a different fix; and a role held
+    # with no usage data at all is worth raising only when it reaches a crown
+    # jewel, and must say that it is unverified rather than unused.
+    privilege = analysis.over_privilege(estate)
+    for grant in privilege.get('grants', []):
+        status = grant.get('status')
+        reaches = bool(grant.get('reaches_crown_jewel'))
+        if status not in ('never', 'idle') and not (status == 'unknown' and reaches):
+            continue
+        identity = grant.get('identity', {})
+        target = grant.get('target', {})
+        who, what = identity.get('key'), target.get('key')
+        if status == 'never':
+            title = '%s may reach %s and never has' % (who, what)
+        elif status == 'idle':
+            title = ('%s may reach %s and has not used it in %d days'
+                     % (who, what, grant.get('idle_days') or 0))
+        else:
+            title = ('%s holds %s, and nothing reports whether it is used'
+                     % (who, what))
+        if identity.get('suspended'):
+            title += ', from a suspended account'
+        remediation = ('Revoke the grant, or record why it is held. Nobody '
+                       'has to be attacked for this to be worth fixing.')
+        if status == 'unknown':
+            remediation = ('Confirm whether this role is needed. The source '
+                           'that grants it does not report use, so the '
+                           'answer has to come from the owner.')
         produced.append({
             'id': fingerprint('dormant-entitlement', identity.get('id', ''),
                               target.get('id', '')),
@@ -173,14 +200,13 @@ def derive(estate) -> list[dict]:
                                        target.get('id', '')),
             'kind': 'over-privilege',
             'severity': 'high' if reaches else 'low',
-            'title': ('%s may reach %s and never has'
-                      % (identity.get('key'), target.get('key'))),
+            'title': title,
             'identity': identity,
-            'target': target.get('key') if reaches else None,
-            'routes': 0,
-            'remediation': ('Revoke the grant, or record why it is held. '
-                            'Nobody has to be attacked for this to be worth '
-                            'fixing.'),
+            'target': what if reaches else None,
+            'routes': int(grant.get('routes_through') or 0),
+            'grant': {key: grant.get(key) for key in
+                      ('status', 'permission', 'via', 'last_used', 'idle_days')},
+            'remediation': remediation,
         })
 
     # ---- new structure nothing alerted on -------------------------------

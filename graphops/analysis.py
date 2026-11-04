@@ -10,6 +10,7 @@ This build reads the estate from a JSON file so it runs with nothing
 installed. The engine does not care where the nodes and edges came from.
 """
 from datetime import datetime, timedelta, timezone
+from itertools import pairwise
 
 from . import algorithms as alg
 from .vocab import EdgeKind, NodeKind, Zone
@@ -46,11 +47,23 @@ class LoadedGraph:
         self.meta = meta            # node id -> every field the sources sent
         self.edges_between = edges_between if edges_between is not None else {}
 
-    def describe(self, node_id):
+    def describe(self, node_id, *, fields=()):
+        """A node as an answer shows it.
+
+        Six fields always, plus `regimes`, because "reaches a PCI system" is
+        a different finding from "reaches a system" and every screen showing
+        a crown jewel needs to say which. `fields` adds more on request, for
+        the few answers that need them, so routes stay small.
+        """
         m = self.meta.get(node_id, {})
-        return {'id': node_id, 'kind': m.get('kind', ''), 'key': m.get('key', ''),
-                'label': m.get('label', ''), 'zone': m.get('zone', ''),
-                'is_crown_jewel': m.get('crown', False)}
+        described = {'id': node_id, 'kind': m.get('kind', ''), 'key': m.get('key', ''),
+                     'label': m.get('label', ''), 'zone': m.get('zone', ''),
+                     'is_crown_jewel': m.get('crown', False),
+                     'regimes': list(m.get('regimes') or ())}
+        for name in fields:
+            if name in m:
+                described[name] = m[name]
+        return described
 
     def describe_path(self, path):
         """A path as a kill chain rather than a list of ids.
@@ -93,10 +106,12 @@ class Estate:
         self.name = payload.get('name', 'unnamed estate')
         self.nodes = payload['nodes']
         self.edges = payload['edges']
-        # The moment the data describes. A replay carries its recording time,
-        # live data the time it was ingested, and a hand-authored estate may
-        # carry neither. See `now()`.
-        stamp = payload.get('as_of')
+        # The moment the data describes. A replay carries its recording time
+        # and live data the time it was ingested. A hand-authored estate
+        # carries the fixed reference it was written against as `generated`,
+        # which is the same promise: a judge running it next month gets the
+        # write-up's numbers, rather than grants quietly ageing into idle.
+        stamp = payload.get('as_of') or payload.get('generated')
         self.as_of = _when(stamp) if stamp else None
         self.mode = payload.get('mode')
 
@@ -174,7 +189,9 @@ def exposure(estate, max_depth=4, max_paths=400):
     sources = loaded.entry_points()
     targets = loaded.crown_jewels()
     if not sources or not targets:
-        return {'paths': [], 'choke_points': [], 'reachable': False,
+        return {'paths': [], 'choke_points': [], 'targets': [],
+                'reachable': False, 'path_count': 0,
+                'entry_points': len(sources), 'crown_jewels_total': len(targets),
                 'why': ('No untrusted entry points.' if not sources
                         else 'No asset is marked as a crown jewel yet.')}
 
@@ -183,13 +200,32 @@ def exposure(estate, max_depth=4, max_paths=400):
     chokes = alg.choke_points(paths, exclude=set(sources) | set(targets))
     best, best_cost = alg.cheapest_path(loaded.graph, sources, targets)
 
+    # Routes per crown jewel, over every route found rather than the 25
+    # returned. "Which jewel is most exposed" is a question about the whole
+    # enumeration, and answering it from the first page would rank by
+    # whatever happened to sort first.
+    per_target: dict[str, int] = {}
+    for found in paths:
+        end = found['path'][-1]
+        per_target[end] = per_target.get(end, 0) + 1
+
     return {
         'reachable': bool(paths),
         'path_count': len(paths),
+        # True when the search stopped at its cap, so path_count is a floor
+        # rather than a total. A screen that shows the number has to say so.
+        'capped': len(paths) >= max_paths,
+        'max_depth': max_depth,
+        'max_paths': max_paths,
+        'entry_points': len(sources),
+        'crown_jewels_total': len(targets),
         'cheapest': {'steps': loaded.describe_path(best), 'cost': best_cost}
                     if best else None,
         'paths': [{'steps': loaded.describe_path(p['path']), 'cost': p['cost']}
                   for p in paths[:25]],
+        'targets': sorted((dict(loaded.describe(node), routes=count)
+                           for node, count in per_target.items()),
+                          key=lambda t: (-t['routes'], t['key'])),
         'choke_points': [dict(loaded.describe(c['node']),
                               paths_through=c['paths_through'],
                               share=c['share'])
@@ -201,6 +237,27 @@ def exposure(estate, max_depth=4, max_paths=400):
 # this is a cost ceiling and not a preference. Six is enough to show a team
 # its options without turning one request into a minute of CPU.
 MAX_CUTS_SIMULATED = 6
+
+
+def _revocation(grant):
+    """The sentence a revocation is carried out from.
+
+    It names where the grant was made, because that is where it is removed.
+    A grant that came through a group is taken out of the group, a directory
+    role is left by its member, and a direct assignment is revoked on the
+    person. "Revoke support-desk's access" sends somebody to the wrong
+    console for two of those three.
+    """
+    who = grant['identity']['key']
+    what = grant['target']['key']
+    via = grant.get('via')
+    if via == 'directory role':
+        return 'remove %s from the %s role' % (who, grant.get('permission') or what)
+    if via == 'group':
+        return "remove %s's group-assigned access to %s" % (who, what)
+    if via == 'direct':
+        return "revoke %s's direct access to %s" % (who, what)
+    return "revoke %s's grant on %s" % (who, what)
 
 
 def containment(estate, max_depth=4, max_paths=400, candidates=MAX_CUTS_SIMULATED):
@@ -347,11 +404,13 @@ def containment(estate, max_depth=4, max_paths=400, candidates=MAX_CUTS_SIMULATE
             # grants held by the same account are two different decisions,
             # and "revoke support-desk" twice over says neither of them.
             'cut': dict(grant['target'],
-                        action="revoke %s's grant on %s"
-                               % (grant['identity']['key'],
-                                  grant['target']['key']),
+                        action=_revocation(grant),
                         granted_to=grant['identity']['key']),
             'kind': 'entitlement',
+            'granted_to': grant['identity']['key'],
+            'via': grant.get('via'),
+            'permission': grant.get('permission'),
+            'status': grant.get('status'),
             'routes_counted_through': None,
             'routes_before': len(before),
             'routes_after': len(after),
@@ -491,12 +550,35 @@ def critical_nodes(estate, limit=8):
     """
     loaded = estate.load()
     ranked = alg.pagerank(loaded.graph)
+
+    # What the rank cannot say on its own: how many routes actually pass
+    # through the system and to how many distinct crown jewels. PageRank
+    # orders by structural importance; these are the facts a team weighs
+    # it against.
+    through: dict[str, int] = {}
+    jewels: dict[str, set] = {}
+    sources, targets = loaded.entry_points(), loaded.crown_jewels()
+    if sources and targets:
+        for found in alg.attack_paths(loaded.graph, sources, targets,
+                                      max_depth=4, max_paths=400):
+            route = found['path']
+            for node in set(route[1:-1]):
+                through[node] = through.get(node, 0) + 1
+                jewels.setdefault(node, set()).add(route[-1])
+
+    untrusted = {n for n, m in loaded.meta.items() if m.get('zone') == Zone.UNTRUSTED}
     out = []
     for row in ranked:
-        meta = loaded.meta.get(row['node'], {})
+        node = row['node']
+        meta = loaded.meta.get(node, {})
         if meta.get('zone') == Zone.UNTRUSTED:
             continue
-        out.append(dict(loaded.describe(row['node']), score=row['score']))
+        out.append(dict(loaded.describe(node), score=row['score'],
+                        # Reachable in one step from the internet.
+                        facing_internet=any(p in untrusted
+                                            for p in loaded.graph.inc.get(node, ())),
+                        routes_through=through.get(node, 0),
+                        crown_jewels_reached=len(jewels.get(node, ()))))
         if len(out) >= limit:
             break
     return out
@@ -523,9 +605,13 @@ def segments(estate, window_hours=24, now=None):
 
     out = []
     for members in alg.louvain_communities(loaded.graph):
-        described = [loaded.describe(n) for n in members]
+        described = [loaded.describe(n, fields=('owner', 'environment'))
+                     for n in members]
+        label, shared = _segment_label(described)
         out.append({
             'size': len(members),
+            'label': label,
+            'shared': shared,
             'members': described,
             'crown_jewels': [d for d in described if d['is_crown_jewel']],
             'has_new_activity': bool(set(members) & fresh_nodes),
@@ -533,40 +619,155 @@ def segments(estate, window_hours=24, now=None):
     return out
 
 
-def over_privilege(estate):
-    """Access that policy grants and nobody has ever exercised.
+def _segment_label(members):
+    """Name a segment from what its members really share, or not at all.
+
+    Louvain finds groups; it does not know what they are. A title such as
+    "Build and Deploy" would be invented, and the first analyst to open one
+    full of payroll systems stops trusting every other label on the screen.
+    So a segment is named after an owner or environment only when one is
+    stated by a source for at least two members and covers most of them,
+    and otherwise it is described by what it is made of.
+    """
+    size = len(members)
+    for field in ('owner', 'environment'):
+        counts: dict[str, int] = {}
+        for member in members:
+            value = (member.get(field) or '').strip()
+            if value:
+                counts[value] = counts.get(value, 0) + 1
+        if not counts:
+            continue
+        value, count = max(counts.items(), key=lambda item: (item[1], item[0]))
+        if count >= 2 and count * 2 > size:
+            return ('mostly %s, %d of %d' % (value, count, size),
+                    {'field': field, 'value': value, 'members': count})
+
+    kinds: dict[str, int] = {}
+    for member in members:
+        kinds[member['kind']] = kinds.get(member['kind'], 0) + 1
+    parts = ['%d %s' % (n, kind if n == 1 else _plural(kind))
+             for kind, n in sorted(kinds.items(), key=lambda kv: (-kv[1], kv[0]))]
+    return ', '.join(parts[:3]), None
+
+
+def _plural(kind):
+    return {'identity': 'identities', 'address': 'addresses',
+            'vulnerability': 'vulnerabilities'}.get(kind, kind + 's')
+
+
+#: How long a grant may go unused before it counts as dormant. Ninety days is
+#: the window access reviews commonly use, and it is a parameter on every
+#: call rather than a belief built into the answer.
+IDLE_AFTER_DAYS = 90
+
+#: The statuses a grant can have. Only the middle two are dormant.
+GRANT_STATUSES = ('used', 'idle', 'never', 'unknown')
+
+
+def over_privilege(estate, idle_days=IDLE_AFTER_DAYS, now=None):
+    """Access that policy grants and nobody exercises.
 
     The zero-trust question, asked of one graph rather than two systems.
     `ENTITLED` edges come from the identity provider and say what a
     principal is ALLOWED to reach. `CALLED` and `SERVES` edges come from
-    logs and say what it ACTUALLY reached. An entitlement with no matching
-    use is standing access that buys the business nothing and buys an
-    attacker a free step, because whoever takes the credential inherits the
-    whole grant rather than the part its owner needed.
+    logs and say what it ACTUALLY reached. An entitlement with no recent use
+    is standing access that buys the business nothing and buys an attacker a
+    free step, because whoever takes the credential inherits the whole
+    grant rather than the part its owner needed.
 
-    Reported with the crown-jewel flag, because "the support desk can read
-    the card database and never has" is a sentence that ends an argument,
-    and "there are 400 unused permissions" is not.
+    DORMANT USED TO BE BINARY, AND THAT MADE TWO MISTAKES. A grant used once
+    two years ago counted as exercised forever, and a grant from a source
+    that never reports use read as "never used", which was a claim with no
+    evidence behind it. Each grant now carries one of four statuses:
+
+      used     a use within `idle_days` of now
+      idle     the last use is older than that              (dormant)
+      never    its source reports use, and there is none    (dormant)
+      unknown  nothing reports whether it is used           (not dormant)
+
+    The last use is the latest of what the identity provider says about the
+    grant itself (`last_used`, e.g. Okta's lastSignOn) and every observed use
+    of the same pair in the logs. "Now" is the estate's own, so a replay
+    answers as of when it was recorded.
+
+    Reported with the crown-jewel flag and the regime, because "the support
+    desk can read the PCI card database and never has" is a sentence that
+    ends an argument, and "there are 400 unused permissions" is not.
     """
+    now = estate.now(now)
     loaded = estate.load()
-    used = set()
-    entitled = []
+
+    grants = []
+    last_seen_use: dict[tuple, str] = {}
     for e in estate.edges:
         pair = (e['src'], e['dst'])
         if e['kind'] == EdgeKind.ENTITLED:
-            entitled.append(pair)
+            grants.append(e)
         elif e['kind'] in (EdgeKind.CALLED, EdgeKind.SERVES):
-            used.add(pair)
+            stamp = e.get('last_seen') or e.get('first_seen')
+            if stamp and stamp > last_seen_use.get(pair, ''):
+                last_seen_use[pair] = stamp
 
-    dormant = []
-    for src, dst in entitled:
-        if (src, dst) in used:
-            continue
-        dormant.append({'identity': loaded.describe(src),
-                        'target': loaded.describe(dst),
-                        'reaches_crown_jewel':
-                            loaded.meta.get(dst, {}).get('crown', False)})
-    dormant.sort(key=lambda d: (not d['reaches_crown_jewel'],
-                                d['identity']['key']))
-    return {'granted': len(entitled), 'exercised': len(entitled) - len(dormant),
-            'dormant': dormant}
+    # How many routes each grant carries. Computed once over the same
+    # enumeration exposure uses, so "this grant sits on 20 routes to the
+    # card database" is the same 20 everywhere it is quoted.
+    on_route: dict[tuple, int] = {}
+    sources, targets = loaded.entry_points(), loaded.crown_jewels()
+    if sources and targets:
+        for found in alg.attack_paths(loaded.graph, sources, targets,
+                                      max_depth=4, max_paths=400):
+            for step in set(pairwise(found['path'])):
+                on_route[step] = on_route.get(step, 0) + 1
+
+    rows = []
+    for g in grants:
+        pair = (g['src'], g['dst'])
+        stamps = [s for s in (g.get('last_used'), last_seen_use.get(pair)) if s]
+        last = max(stamps) if stamps else None
+        idle_for = None
+        if last:
+            idle_for = max(0, (now - _when(last)).days)
+            status = 'used' if idle_for <= idle_days else 'idle'
+        else:
+            status = 'never' if g.get('usage_reported', True) else 'unknown'
+        target = loaded.meta.get(g['dst'], {})
+        rows.append({
+            'identity': loaded.describe(g['src'],
+                                        fields=('principal_type', 'suspended')),
+            'target': loaded.describe(g['dst']),
+            'permission': g.get('permission'),
+            'via': g.get('via'),
+            'granted_at': g.get('first_seen') or None,
+            'last_used': last,
+            'idle_days': idle_for,
+            'status': status,
+            'reaches_crown_jewel': bool(target.get('crown', False)),
+            'routes_through': on_route.get(pair, 0),
+            'sources': list(g.get('sources') or ()),
+        })
+
+    # Most urgent first: reaching a crown jewel, then carrying routes, then
+    # never used ahead of merely idle, then by name for a stable order.
+    order = {'never': 0, 'idle': 1, 'unknown': 2, 'used': 3}
+    rows.sort(key=lambda r: (not r['reaches_crown_jewel'], -r['routes_through'],
+                             order[r['status']], r['identity']['key'],
+                             r['target']['key']))
+    dormant = [r for r in rows if r['status'] in ('never', 'idle')]
+    counts = {status: sum(1 for r in rows if r['status'] == status)
+              for status in GRANT_STATUSES}
+    return {
+        'granted': len(rows),
+        'exercised': counts['used'],
+        'unverified': counts['unknown'],
+        'by_status': counts,
+        'dormant_reaching_crown_jewels': sum(1 for r in dormant
+                                             if r['reaches_crown_jewel']),
+        # The threshold. Named apart from each row's `idle_days`, which is
+        # how long that one grant has gone unused; one name for both would
+        # be a bug waiting in whatever renders them.
+        'idle_after_days': idle_days,
+        'as_of': now.isoformat(),
+        'grants': rows,
+        'dormant': dormant,
+    }
