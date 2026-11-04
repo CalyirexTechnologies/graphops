@@ -331,6 +331,27 @@ def register_routes(app, *, identity, audit, current_principal, requires,
                     grants=rows[offset:offset + limit])
         return respond(body, principal)
 
+    @graph.get('/nodes', summary='Find entities by name')
+    def search_nodes(principal: Principal = Depends(requires(Permission.GRAPH_QUERY)),
+                     q: str | None = Query(default=None, max_length=200),
+                     limit: int = Query(default=20, ge=1, le=200)):
+        # Matched over what the caller is shown, as every search here is.
+        # Matching the real names would let a caller without crown:reveal
+        # learn that a crown jewel called "billing" exists from the fact
+        # that a masked result came back at all.
+        estate = current_estate(principal)
+        loaded = estate.loaded()
+        described = [loaded.describe(node_id) for node_id in loaded.meta]
+        visible = as_seen_by(principal, described)
+        if q:
+            needle = q.strip().lower()
+            visible = [d for d in visible if needle in (d['key'] or '').lower()
+                       or needle in (d['label'] or '').lower()]
+        # Crown jewels first, then by name, so the systems that matter are
+        # the first thing a search offers.
+        visible.sort(key=lambda d: (not d['is_crown_jewel'], d['key']))
+        return respond({'nodes': visible[:limit], 'total': len(visible)}, principal)
+
     @graph.get('/nodes/{node_id:path}', summary='One entity, where it came from, and what it reaches')
     def node_detail(node_id: str,
                     principal: Principal = Depends(requires(Permission.GRAPH_QUERY))):

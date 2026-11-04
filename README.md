@@ -38,9 +38,19 @@ The API and the Neo4j backend are optional extras:
 ```bash
 make install                      # venv + fastapi + neo4j driver + pytest
 export GRAPHOPS_SIGNING_KEY=$(python3 -m graphops.cli keygen)
-make serve                        # http://127.0.0.1:8000/docs
-make test                         # 143 tests
+.venv/bin/python -m graphops.cli bootstrap --slug acme --email you@acme.example
+make serve                        # console at http://127.0.0.1:8000/
+make test                         # 338 tests
 ```
+
+`bootstrap` prints a generated owner password once. Sign in to the console
+with `acme`, that email and that password. The console has ten screens
+(overview, exposure, node detail, access, findings, connectors, compliance,
+admin, profile and sign-in) and every number on them comes from the API:
+nothing is sample data. It is plain scripts with no build step, served under
+a content security policy that allows no inline script and no eval, and it
+shows each role exactly what that role's permissions allow. An auditor sees
+every route with the crown jewels pseudonymised. The API itself is at `/docs`.
 
 Or the whole thing, API and Neo4j together:
 
@@ -177,7 +187,7 @@ fed a node.
 | **Authorisation** | 7 roles, 21 permissions, a deny-by-default matrix held as data so the tests can assert properties over all of it. |
 | **Graph-aware redaction** | `crown:reveal` is its own permission. Without it a crown jewel reads as `crown-jewel-7f3a`: stable per tenant, HMAC-derived, counts preserved. |
 | **Audit** | Append-only and hash-chained. Editing or deleting an entry is detected and the first damaged row is named. Secrets scrubbed before the write. |
-| **REST API** | 24 operations, OpenAPI at `/openapi.json`, Swagger at `/docs`. |
+| **REST API** | 32 operations, OpenAPI at `/openapi.json`, Swagger at `/docs`. |
 | **Exports** | STIX 2.1, SARIF 2.1.0, OSCAL assessment results, CSV. |
 | **Compliance** | SOC 2, ISO 27001 and CIS controls assessed from graph evidence. |
 | **Observability** | Prometheus metrics, structured logs, separate liveness and readiness. |

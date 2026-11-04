@@ -42,6 +42,7 @@ include = ["graphops*"]
 
 [tool.setuptools.package-data]
 "graphops.connectors" = ["fixtures/*.json"]
+"graphops.console" = ["*.html", "*.css", "*.js", "vendor/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -173,16 +173,23 @@ def cmd_verify_audit(args) -> int:
 
 def cmd_serve(args) -> int:
     """Run the API."""
+    import time as _time
+
     import uvicorn
 
     from . import analysis
     from .api.app import create_app
     from .connectors import registry, resolve
-
     settings = _settings()
     db = _database(settings)
-    estate = analysis.Estate(resolve.resolve(registry.ingest().estate))
+    started = _time.time()
+    result = registry.ingest()
+    resolved = resolve.resolve(result.estate)
+    estate = analysis.Estate(resolved)
     app = create_app(settings=settings, db=db, estate_provider=lambda: estate)
+    # Recorded as the ingest every tenant sees until it runs one of its own,
+    # so the console's "last ingest" is true from the first page load.
+    app.state.estates.record_ingest(None, None, result, resolved, started, _time.time())
     # 127.0.0.1 by default. Binding 0.0.0.0 is an explicit choice an operator
     # makes, not something a default does on their behalf.
     uvicorn.run(app, host=args.host, port=args.port, log_level='info')

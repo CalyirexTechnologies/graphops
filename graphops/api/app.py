@@ -46,7 +46,22 @@ PUBLIC_PATHS = frozenset({
     '/health', '/health/ready', '/openapi.json', '/docs', '/redoc',
     '/docs/oauth2-redirect', '/metrics',
     '/v1/auth/login', '/v1/auth/mfa', '/v1/auth/refresh',
+    # A redirect to the console. The console itself is static files mounted
+    # at /console; it holds no estate data and fetches everything through
+    # the guarded API with the signed-in user's token.
+    '/',
 })
+
+#: The console's own content security policy. Scripts from this origin only,
+#: no inline script and no eval, which the console is written to need: it
+#: builds every element through Preact and never parses markup from a
+#: string. Fonts are the one third-party load, from Google Fonts, as the
+#: design specifies; everything else, including every API call, stays here.
+CONSOLE_CSP = ("default-src 'none'; script-src 'self'; "
+               "style-src 'self' https://fonts.googleapis.com; "
+               "font-src https://fonts.gstatic.com; connect-src 'self'; "
+               "img-src 'self' data:; base-uri 'none'; form-action 'self'; "
+               "frame-ancestors 'none'")
 
 
 class ApiError(HTTPException):
@@ -145,6 +160,8 @@ def create_app(*, settings: Settings, db, estate_provider=None) -> FastAPI:
         response.headers['X-Frame-Options'] = 'DENY'
         response.headers['Cache-Control'] = 'no-store'
         response.headers['Referrer-Policy'] = 'no-referrer'
+        if request.url.path == '/console' or request.url.path.startswith('/console/'):
+            response.headers['Content-Security-Policy'] = CONSOLE_CSP
         return response
 
     @app.exception_handler(AccessDenied)
@@ -225,4 +242,20 @@ def create_app(*, settings: Settings, db, estate_provider=None) -> FastAPI:
                     current_principal=current_principal, requires=requires,
                     current_estate=current_estate, respond=respond,
                     settings=settings, db=db, estates=estates)
+
+    # ------------------------------------------------------------- console
+    from pathlib import Path
+
+    from fastapi.responses import RedirectResponse
+    from fastapi.staticfiles import StaticFiles
+
+    console_dir = Path(__file__).resolve().parent.parent / 'console'
+
+    @app.get('/', include_in_schema=False)
+    def root():
+        return RedirectResponse('/console/', status_code=307)
+
+    if console_dir.is_dir():
+        app.mount('/console', StaticFiles(directory=str(console_dir), html=True),
+                  name='console')
     return app
