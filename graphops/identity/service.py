@@ -52,9 +52,15 @@ class AuthError(Exception):
 
 
 class InvalidCredentials(AuthError):
-    """Deliberately vague. Never says which half was wrong."""
+    """Deliberately vague. Never says which half was wrong.
 
-    def __init__(self, message: str = 'invalid email or password'):
+    `attempts_remaining` counts down identically whether or not the account
+    exists, which is what lets it be shown at all. See `_register_ghost_failure`.
+    """
+
+    def __init__(self, message: str = 'invalid email or password',
+                 attempts_remaining: int | None = None):
+        self.attempts_remaining = attempts_remaining
         super().__init__(message)
 
 
@@ -170,12 +176,16 @@ class IdentityService:
 
         if user is None:
             # Spend a comparable amount of time before failing, so a missing
-            # account does not answer faster than a wrong password.
+            # account does not answer faster than a wrong password, and count
+            # the failure exactly as a real account's would be counted, so it
+            # locks after the same number of tries and says so the same way.
             passwords.dummy_verify()
+            self._check_ghost_lock(organization_id, email)
+            remaining = self._register_ghost_failure(organization_id, email)
             self.audit.record(action='auth.login', outcome=Outcome.FAILURE,
                               organization_id=organization_id, resource=email,
                               client_ip=client_ip, detail={'reason': 'no such user'})
-            raise InvalidCredentials()
+            raise InvalidCredentials(attempts_remaining=remaining)
 
         if user['locked_until'] and user['locked_until'] > _now():
             self.audit.record(action='auth.login', outcome=Outcome.DENIED,
@@ -185,15 +195,17 @@ class IdentityService:
             raise AccountLocked(int(user['locked_until']))
 
         if not user['is_active']:
-            self.audit.record(action='auth.login', outcome=Outcome.DENIED,
-                              organization_id=organization_id,
-                              actor_id=user['id'], resource=email,
-                              client_ip=client_ip, detail={'reason': 'inactive'})
-            raise InvalidCredentials()
+            # A deactivated account answers as a wrong password does,
+            # including the time it takes and the count it keeps. It used to
+            # skip the password check entirely, which made it the fastest
+            # failure and so distinguishable by timing alone.
+            passwords.dummy_verify()
+            remaining = self._register_failure(user, client_ip)
+            raise InvalidCredentials(attempts_remaining=remaining)
 
         if not passwords.verify_password(password, user['password_hash']):
-            self._register_failure(user, client_ip)
-            raise InvalidCredentials()
+            remaining = self._register_failure(user, client_ip)
+            raise InvalidCredentials(attempts_remaining=remaining)
 
         # Upgrade the stored hash opportunistically, while the plaintext is
         # in hand and already verified.
@@ -251,8 +263,22 @@ class IdentityService:
                           actor_id=user['id'], client_ip=client_ip)
         return self._start_session(user, client_ip=client_ip)
 
-    def _register_failure(self, user, client_ip: str | None) -> None:
-        attempts = int(user['failed_attempts']) + 1
+    @staticmethod
+    def _next_attempt(previous: int, locked_until) -> int:
+        """The failure count after one more failure.
+
+        A lockout that has expired starts the count again. Without this the
+        count stayed at five after the fifteen minutes passed, so the very
+        next wrong password locked the account for another fifteen, and the
+        person who had waited out the lockout got one try rather than five.
+        """
+        if locked_until and int(locked_until) <= _now():
+            previous = 0
+        return int(previous) + 1
+
+    def _register_failure(self, user, client_ip: str | None) -> int:
+        """Count one failure against a real account. Returns tries left."""
+        attempts = self._next_attempt(user['failed_attempts'], user['locked_until'])
         locked_until = None
         if attempts >= MAX_FAILED_ATTEMPTS:
             locked_until = _now() + LOCKOUT_SECONDS
@@ -264,6 +290,51 @@ class IdentityService:
             organization_id=user['organization_id'], actor_id=user['id'],
             resource=user['email'], client_ip=client_ip,
             detail={'attempts': attempts, 'locked': bool(locked_until)})
+        return max(0, MAX_FAILED_ATTEMPTS - attempts)
+
+    # A missing account is counted in its own table by the same rules, so
+    # that neither the lockout nor the count of tries left can be used to
+    # tell a real address from a made-up one.
+    def _ghost_row(self, organization_id: str, email: str):
+        return self.db.query_one(
+            'SELECT failed_attempts, locked_until FROM login_failures'
+            ' WHERE organization_id = ? AND email = ?',
+            (organization_id, email.strip().lower()))
+
+    def _check_ghost_lock(self, organization_id: str, email: str) -> None:
+        row = self._ghost_row(organization_id, email)
+        if row and row['locked_until'] and row['locked_until'] > _now():
+            raise AccountLocked(int(row['locked_until']))
+
+    def fail_unknown_organization(self, slug: str, email: str) -> None:
+        """Answer a sign-in to a tenant that does not exist.
+
+        Exactly as a wrong password at a real tenant answers: the same time,
+        the same count of tries left, the same lockout after five. Counted
+        under a key that cannot collide with a real organization id, since
+        those are UUIDs. Always raises.
+        """
+        passwords.dummy_verify()
+        ghost_org = 'unknown-organization:%s' % slug.strip().lower()
+        self._check_ghost_lock(ghost_org, email)
+        raise InvalidCredentials(
+            attempts_remaining=self._register_ghost_failure(ghost_org, email))
+
+    def _register_ghost_failure(self, organization_id: str, email: str) -> int:
+        row = self._ghost_row(organization_id, email)
+        attempts = self._next_attempt(row['failed_attempts'] if row else 0,
+                                      row['locked_until'] if row else None)
+        locked_until = (_now() + LOCKOUT_SECONDS
+                        if attempts >= MAX_FAILED_ATTEMPTS else None)
+        with self.db.write() as cur:
+            cur.execute(
+                'INSERT INTO login_failures (organization_id, email,'
+                ' failed_attempts, locked_until) VALUES (?, ?, ?, ?)'
+                ' ON CONFLICT (organization_id, email) DO UPDATE SET'
+                ' failed_attempts = excluded.failed_attempts,'
+                ' locked_until = excluded.locked_until',
+                (organization_id, email.strip().lower(), attempts, locked_until))
+        return max(0, MAX_FAILED_ATTEMPTS - attempts)
 
     def _clear_failures(self, user_id: str) -> None:
         with self.db.write() as cur:

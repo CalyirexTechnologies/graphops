@@ -103,6 +103,38 @@ def test_blast_radius_names_no_crown_jewel_it_reaches(
     assert not leaked, '%s blast radius leaked %s' % (role, leaked)
 
 
+@pytest.mark.parametrize('path', ['/v1/findings?q=%s', '/v1/graph/over-privilege?q=%s'])
+def test_a_search_cannot_be_used_to_ask_whether_a_crown_jewel_exists(
+        client, auth_header, connector_estate, path):
+    """A search over the unredacted text is an oracle. The match comes back
+    masked, and whether anything came back at all is the answer. Searching
+    the pseudonym, which the caller has seen, must still work."""
+    blind = client.get(path % 'billing', headers=auth_header('auditor')).json()
+    assert blind['total'] == 0, 'the search answered for a name the caller cannot see'
+    analyst = client.get(path % 'billing', headers=auth_header('analyst')).json()
+    assert analyst['total'] > 0, 'the name is there, so the test is meaningful'
+
+
+def test_node_detail_names_no_crown_jewel_it_points_at(
+        client, auth_header, connector_estate):
+    """support-desk is not a crown jewel, and its page lists grants on two.
+    Path parameters keep this route out of the route-table walk above, so
+    it is checked here by hand."""
+    names = crown_names(connector_estate)
+    response = client.get('/v1/graph/nodes/id:support-desk',
+                          headers=auth_header('auditor'))
+    assert response.status_code == 200
+    body = json.dumps(response.json())
+    assert not [name for name in names if name in body]
+
+
+def test_the_overview_names_no_crown_jewel(client, auth_header, connector_estate):
+    names = crown_names(connector_estate)
+    for role in BLIND_ROLES:
+        body = json.dumps(client.get('/v1/overview', headers=auth_header(role)).json())
+        assert not [name for name in names if name in body], role
+
+
 def test_the_blind_roles_are_the_ones_the_product_says_they_are():
     """If this changes, the threat model's description of who sees what has
     to change with it."""

@@ -29,6 +29,12 @@ class Permission(str, Enum):
     GRAPH_QUERY = 'graph:query'
     GRAPH_EXPORT = 'graph:export'
     CROWN_REVEAL = 'crown:reveal'
+    # Saying which systems matter. Every answer in the product is a route to
+    # a crown jewel, so this changes all of them for the tenant, and only a
+    # role that can already see crown jewel names may hold it: one that
+    # could not would mark a pseudonym and learn the real id from whether
+    # the mark succeeded.
+    CROWN_WRITE = 'crown:write'
 
     # findings
     FINDING_READ = 'finding:read'
@@ -71,7 +77,7 @@ P = Permission
 #: The authorisation model. Nothing is inherited; each row is complete.
 ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
     Role.OWNER: frozenset({
-        P.GRAPH_READ, P.GRAPH_QUERY, P.GRAPH_EXPORT, P.CROWN_REVEAL,
+        P.GRAPH_READ, P.GRAPH_QUERY, P.GRAPH_EXPORT, P.CROWN_REVEAL, P.CROWN_WRITE,
         P.FINDING_READ, P.FINDING_WRITE, P.FINDING_ASSIGN,
         P.CONNECTOR_READ, P.CONNECTOR_RUN, P.CONNECTOR_CONFIGURE,
         P.USER_READ, P.USER_WRITE, P.ROLE_ASSIGN,
@@ -79,17 +85,18 @@ ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
         P.AUDIT_READ, P.COMPLIANCE_READ, P.IMPERSONATE,
     }),
     Role.ADMIN: frozenset({
-        P.GRAPH_READ, P.GRAPH_QUERY, P.GRAPH_EXPORT, P.CROWN_REVEAL,
+        P.GRAPH_READ, P.GRAPH_QUERY, P.GRAPH_EXPORT, P.CROWN_REVEAL, P.CROWN_WRITE,
         P.FINDING_READ, P.FINDING_WRITE, P.FINDING_ASSIGN,
         P.CONNECTOR_READ, P.CONNECTOR_RUN, P.CONNECTOR_CONFIGURE,
         P.USER_READ, P.USER_WRITE, P.ROLE_ASSIGN,
         P.ORG_READ, P.APIKEY_MANAGE, P.WEBHOOK_MANAGE,
         P.AUDIT_READ, P.COMPLIANCE_READ,
     }),
-    # The working role. Sees everything about the estate, changes nothing
-    # about the tenant.
+    # The working role. Sees everything about the estate and may say which
+    # systems in it matter, which is analysis rather than administration.
+    # Changes nothing about the tenant's people, keys or settings.
     Role.ANALYST: frozenset({
-        P.GRAPH_READ, P.GRAPH_QUERY, P.GRAPH_EXPORT, P.CROWN_REVEAL,
+        P.GRAPH_READ, P.GRAPH_QUERY, P.GRAPH_EXPORT, P.CROWN_REVEAL, P.CROWN_WRITE,
         P.FINDING_READ, P.FINDING_WRITE,
         P.CONNECTOR_READ, P.COMPLIANCE_READ, P.ORG_READ,
     }),

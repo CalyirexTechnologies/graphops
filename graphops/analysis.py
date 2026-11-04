@@ -130,6 +130,24 @@ class Estate:
         with open(path, encoding='utf-8') as handle:
             return cls(json.load(handle))
 
+    def memo(self, key, compute):
+        """Compute something about this estate once.
+
+        An estate does not change after it is built: an ingest or a crown
+        jewel decision makes a new one. So the path enumeration, the loaded
+        graph and the segments can be kept on it, and a console screen that
+        asks four questions pays for the expensive part once rather than
+        four times.
+        """
+        cache = self.__dict__.setdefault('_memo', {})
+        if key not in cache:
+            cache[key] = compute()
+        return cache[key]
+
+    def loaded(self):
+        """The whole estate in memory, built once. See `memo`."""
+        return self.memo('loaded', self.load)
+
     def load(self, only_before=None):
         """Read the estate into memory, optionally as it was before a moment."""
         meta = {}
@@ -163,7 +181,7 @@ def blast_radius(estate, node_id, max_hops=3):
     it is first. An analyst looking at one alert needs the neighbourhood,
     not another score.
     """
-    loaded = estate.load()
+    loaded = estate.loaded()
     if node_id not in loaded.meta:
         return None
     rings = alg.blast_radius(loaded.graph, node_id, max_hops=max_hops)
@@ -177,6 +195,23 @@ def blast_radius(estate, node_id, max_hops=3):
     return out
 
 
+def routes(estate, max_depth=4, max_paths=400):
+    """Every route from the internet to a crown jewel, enumerated once.
+
+    The same enumeration answers exposure, containment's baseline, which
+    grants sit on routes and which systems routes pass through. Before it
+    was shared, a console overview ran it four times per request.
+    """
+    def compute():
+        loaded = estate.loaded()
+        sources, targets = loaded.entry_points(), loaded.crown_jewels()
+        if not sources or not targets:
+            return []
+        return alg.attack_paths(loaded.graph, sources, targets,
+                                max_depth=max_depth, max_paths=max_paths)
+    return estate.memo(('routes', max_depth, max_paths), compute)
+
+
 def exposure(estate, max_depth=4, max_paths=400):
     """Every route from untrusted ground to a crown jewel, and the choke points.
 
@@ -185,7 +220,7 @@ def exposure(estate, max_depth=4, max_paths=400):
     Tuesday, because the point of a choke point is to close it before anyone
     uses it.
     """
-    loaded = estate.load()
+    loaded = estate.loaded()
     sources = loaded.entry_points()
     targets = loaded.crown_jewels()
     if not sources or not targets:
@@ -195,8 +230,7 @@ def exposure(estate, max_depth=4, max_paths=400):
                 'why': ('No untrusted entry points.' if not sources
                         else 'No asset is marked as a crown jewel yet.')}
 
-    paths = alg.attack_paths(loaded.graph, sources, targets,
-                             max_depth=max_depth, max_paths=max_paths)
+    paths = routes(estate, max_depth=max_depth, max_paths=max_paths)
     chokes = alg.choke_points(paths, exclude=set(sources) | set(targets))
     best, best_cost = alg.cheapest_path(loaded.graph, sources, targets)
 
@@ -309,7 +343,7 @@ def containment(estate, max_depth=4, max_paths=400, candidates=MAX_CUTS_SIMULATE
     revocation that closes as many routes as a decommissioning is the one a
     team can actually do on Monday.
     """
-    loaded = estate.load()
+    loaded = estate.loaded()
     sources = loaded.entry_points()
     targets = loaded.crown_jewels()
     ends = set(sources) | set(targets)
@@ -319,8 +353,7 @@ def containment(estate, max_depth=4, max_paths=400, candidates=MAX_CUTS_SIMULATE
                 'why': ('No untrusted entry points.' if not sources
                         else 'No asset is marked as a crown jewel yet.')}
 
-    before = alg.attack_paths(loaded.graph, sources, targets,
-                              max_depth=max_depth, max_paths=max_paths)
+    before = routes(estate, max_depth=max_depth, max_paths=max_paths)
     if not before:
         return {'routes_before': 0, 'options': [], 'reachable': False,
                 'why': 'No route runs from untrusted ground to a crown jewel.'}
@@ -482,7 +515,7 @@ def novel_activity(estate, window_hours=24, max_hops=2, now=None):
     now = estate.now(now)
     cutoff = now - timedelta(hours=window_hours)
 
-    current = estate.load()
+    current = estate.loaded()
     before = estate.load(only_before=cutoff)
 
     fresh = [e for e in estate.edges if _when(e['first_seen']) >= cutoff][:5000]
@@ -548,7 +581,7 @@ def critical_nodes(estate, limit=8):
     already hostile and there is nothing to harden about it. The question
     worth answering is which node WE run sits on the way to the most value.
     """
-    loaded = estate.load()
+    loaded = estate.loaded()
     ranked = alg.pagerank(loaded.graph)
 
     # What the rank cannot say on its own: how many routes actually pass
@@ -557,14 +590,11 @@ def critical_nodes(estate, limit=8):
     # it against.
     through: dict[str, int] = {}
     jewels: dict[str, set] = {}
-    sources, targets = loaded.entry_points(), loaded.crown_jewels()
-    if sources and targets:
-        for found in alg.attack_paths(loaded.graph, sources, targets,
-                                      max_depth=4, max_paths=400):
-            route = found['path']
-            for node in set(route[1:-1]):
-                through[node] = through.get(node, 0) + 1
-                jewels.setdefault(node, set()).add(route[-1])
+    for found in routes(estate):
+        route = found['path']
+        for node in set(route[1:-1]):
+            through[node] = through.get(node, 0) + 1
+            jewels.setdefault(node, set()).add(route[-1])
 
     untrusted = {n for n, m in loaded.meta.items() if m.get('zone') == Zone.UNTRUSTED}
     out = []
@@ -595,7 +625,7 @@ def segments(estate, window_hours=24, now=None):
     """
     now = estate.now(now)
     cutoff = now - timedelta(hours=window_hours)
-    loaded = estate.load()
+    loaded = estate.loaded()
 
     fresh_nodes = set()
     for e in estate.edges:
@@ -604,7 +634,9 @@ def segments(estate, window_hours=24, now=None):
             fresh_nodes.add(e['dst'])
 
     out = []
-    for members in alg.louvain_communities(loaded.graph):
+    communities = estate.memo('communities',
+                              lambda: alg.louvain_communities(loaded.graph))
+    for members in communities:
         described = [loaded.describe(n, fields=('owner', 'environment'))
                      for n in members]
         label, shared = _segment_label(described)
@@ -696,7 +728,7 @@ def over_privilege(estate, idle_days=IDLE_AFTER_DAYS, now=None):
     ends an argument, and "there are 400 unused permissions" is not.
     """
     now = estate.now(now)
-    loaded = estate.load()
+    loaded = estate.loaded()
 
     grants = []
     last_seen_use: dict[tuple, str] = {}
@@ -713,12 +745,9 @@ def over_privilege(estate, idle_days=IDLE_AFTER_DAYS, now=None):
     # enumeration exposure uses, so "this grant sits on 20 routes to the
     # card database" is the same 20 everywhere it is quoted.
     on_route: dict[tuple, int] = {}
-    sources, targets = loaded.entry_points(), loaded.crown_jewels()
-    if sources and targets:
-        for found in alg.attack_paths(loaded.graph, sources, targets,
-                                      max_depth=4, max_paths=400):
-            for step in set(pairwise(found['path'])):
-                on_route[step] = on_route.get(step, 0) + 1
+    for found in routes(estate):
+        for step in set(pairwise(found['path'])):
+            on_route[step] = on_route.get(step, 0) + 1
 
     rows = []
     for g in grants:
@@ -770,4 +799,135 @@ def over_privilege(estate, idle_days=IDLE_AFTER_DAYS, now=None):
         'as_of': now.isoformat(),
         'grants': rows,
         'dormant': dormant,
+    }
+
+
+#: Fields a source sends that are about an entity rather than its routes, so
+#: node detail is where they surface. Listed rather than "everything", so a
+#: new internal field does not appear on a screen by accident.
+_DETAIL_FIELDS = ('sources', 'resolved_from', 'principal_type', 'suspended',
+                  'owner', 'environment', 'classification', 'crown_source',
+                  'crown_source_overridden', 'crown_override', 'arn',
+                  'platform', 'cvss', 'severity', 'inferred')
+
+
+def node_detail(estate, node_id):
+    """One entity: what it is, where it came from, and where it sits.
+
+    Everything the other answers say about one node, gathered: the routes
+    it is on, whether it is a choke point, which segment it belongs to, what
+    a compromise of it reaches, and for an identity, what it is granted and
+    whether it uses it. Raises KeyError for a node that does not exist.
+    """
+    loaded = estate.loaded()
+    if node_id not in loaded.meta:
+        raise KeyError(node_id)
+    node = loaded.describe(node_id, fields=_DETAIL_FIELDS)
+
+    all_routes = routes(estate)
+    through = [r for r in all_routes if node_id in r['path']]
+    interior = [r for r in through if node_id in r['path'][1:-1]]
+    sources, targets = set(loaded.entry_points()), set(loaded.crown_jewels())
+
+    rings = alg.blast_radius(loaded.graph, node_id, max_hops=3)
+    reached = {n for members in rings.values() for n in members}
+
+    segment = None
+    for index, members in enumerate(estate.memo(
+            'communities', lambda: alg.louvain_communities(loaded.graph))):
+        if node_id in members:
+            described = [loaded.describe(n, fields=('owner', 'environment'))
+                         for n in members]
+            label, shared = _segment_label(described)
+            # Where the segment reaches outside itself: the edges that leave
+            # it, which is what "where it leaks out" means on a screen.
+            inside = set(members)
+            exits = sorted({(src, dst) for src in members
+                            for dst in loaded.graph.out.get(src, ())
+                            if dst not in inside})[:8]
+            segment = {'index': index, 'label': label, 'shared': shared,
+                       'size': len(members),
+                       'members': described[:24],
+                       'exits': [{'from': loaded.describe(a), 'to': loaded.describe(b)}
+                                 for a, b in exits]}
+            break
+
+    privilege = over_privilege(estate)
+    grants = [g for g in privilege['grants'] if g['identity']['id'] == node_id]
+    grantees = [g for g in privilege['grants'] if g['target']['id'] == node_id]
+
+    def edges(pairs):
+        out = []
+        for src, dst in pairs:
+            for record in loaded.edges_between.get((src, dst), ()):
+                out.append({'from': loaded.describe(src), 'to': loaded.describe(dst),
+                            'kind': record['kind'], 'cost': record.get('cost'),
+                            'first_seen': record.get('first_seen'),
+                            'last_seen': record.get('last_seen'),
+                            'actions': record.get('actions') or [],
+                            'sources': record.get('sources') or []})
+        return out
+
+    return {
+        'node': node,
+        'is_entry_point': node_id in sources,
+        'routes': {
+            'count': len(through),
+            'cheapest': [{'steps': loaded.describe_path(r['path']), 'cost': r['cost']}
+                         for r in sorted(through, key=lambda r: (r['cost'], len(r['path'])))[:5]],
+            'total_in_estate': len(all_routes),
+        },
+        'choke': ({'routes_through': len(interior),
+                   'share': round(len(interior) / len(all_routes), 4)}
+                  if interior and all_routes else None),
+        'blast': {'hops': {hop: len(members) for hop, members in sorted(rings.items())},
+                  'total': len(reached),
+                  'crown_jewels_reached': [loaded.describe(n)
+                                           for n in sorted(reached & targets)]},
+        'segment': segment,
+        'grants': grants,
+        'grantees': grantees,
+        'edges_out': edges((node_id, dst) for dst in loaded.graph.out.get(node_id, ())),
+        'edges_in': edges((src, node_id) for src in loaded.graph.inc.get(node_id, ())),
+    }
+
+
+def overview(estate):
+    """The whole estate in one answer, for the screen people land on.
+
+    Built from the other answers rather than computed afresh, so every number
+    here is the number the screen behind it shows. The estate memoises the
+    expensive parts, so this costs one enumeration, not five.
+    """
+    loaded = estate.loaded()
+    by_kind: dict[str, int] = {}
+    by_zone: dict[str, int] = {}
+    for meta in loaded.meta.values():
+        by_kind[meta.get('kind', '')] = by_kind.get(meta.get('kind', ''), 0) + 1
+        by_zone[meta.get('zone', '')] = by_zone.get(meta.get('zone', ''), 0) + 1
+    exposed = exposure(estate)
+    privilege = over_privilege(estate)
+    recent = novel_activity(estate)
+    return {
+        'as_of': estate.now().isoformat(),
+        'mode': estate.mode,
+        'estate': {'entities': len(estate.nodes), 'relationships': len(estate.edges),
+                   'by_kind': by_kind, 'by_zone': by_zone},
+        'exposure': {key: exposed.get(key) for key in
+                     ('reachable', 'path_count', 'capped', 'entry_points',
+                      'crown_jewels_total', 'targets', 'cheapest', 'why',
+                      'max_depth', 'max_paths')},
+        'top_choke_point': (exposed.get('choke_points') or [None])[0],
+        'access': {'granted': privilege['granted'], 'exercised': privilege['exercised'],
+                   'dormant': len(privilege['dormant']),
+                   'unverified': privilege['unverified'],
+                   'dormant_reaching_crown_jewels':
+                       privilege['dormant_reaching_crown_jewels']},
+        'recent': {'window_hours': recent['window_hours'],
+                   'new_edge_count': recent['new_edge_count'],
+                   'new_reach_count': recent['new_reach_count'],
+                   'incident_count': len(recent['incidents']),
+                   'new_edges': recent['new_edges'][:5],
+                   'new_reach': recent['new_reach'][:5],
+                   'incidents': recent['incidents'][:5]},
     }

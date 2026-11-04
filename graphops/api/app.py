@@ -91,6 +91,11 @@ def create_app(*, settings: Settings, db, estate_provider=None) -> FastAPI:
     app.state.identity = identity
     app.state.audit = audit
     app.state.estate_provider = estate_provider
+    #: The estate each tenant is served, its overrides, ingests and findings
+    #: history. See api/state.py for why this exists.
+    from .state import EstateService
+    estates = EstateService(db, estate_provider)
+    app.state.estates = estates
     app.state.started_at = time.time()
     #: Per-tenant pseudonymisation salt. Derived from the signing key so it
     #: needs no separate secret, and domain-separated so a leak of one
@@ -189,23 +194,24 @@ def create_app(*, settings: Settings, db, estate_provider=None) -> FastAPI:
             return principal
         return guard
 
-    def current_estate():
-        provider = app.state.estate_provider
-        if provider is None:
+    def current_estate(principal: Principal):
+        """The estate this caller's tenant is served, overrides applied."""
+        estate = estates.for_org(principal.organization)
+        if estate is None:
             raise ApiError(503, 'no estate is loaded')
-        return provider()
+        return estate
 
     def respond(payload: dict, principal: Principal) -> dict:
         # The estate is passed so the redactor knows every name a crown jewel
         # goes by and can scrub it from text as well as from node records.
         # Without it, sentences such as finding titles carried the names to
-        # roles that may not see them. When no estate is loaded there are no
-        # crown jewels to name, so the response goes through node masking
-        # alone rather than failing.
-        provider = app.state.estate_provider
+        # roles that may not see them. It is the tenant's own view, so a
+        # system the tenant marked as a crown jewel is scrubbed too. When no
+        # estate is loaded there are no crown jewels to name, so the response
+        # goes through node masking alone rather than failing.
         estate = None
-        if provider is not None and not principal.can(Permission.CROWN_REVEAL):
-            estate = provider()
+        if not principal.can(Permission.CROWN_REVEAL):
+            estate = estates.for_org(principal.organization)
         return redact(payload, principal, salt=app.state.redaction_salt,
                       estate=estate)
 
@@ -218,5 +224,5 @@ def create_app(*, settings: Settings, db, estate_provider=None) -> FastAPI:
     register_routes(app, identity=identity, audit=audit,
                     current_principal=current_principal, requires=requires,
                     current_estate=current_estate, respond=respond,
-                    settings=settings, db=db)
+                    settings=settings, db=db, estates=estates)
     return app

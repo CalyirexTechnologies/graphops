@@ -192,6 +192,11 @@ class Redactor:
         """Redact one node record if it is a crown jewel and may not be seen."""
         if self.may_reveal or not self._is_crown(record):
             return record
+        if record.get('redacted'):
+            # Already masked. Masking again would derive a pseudonym from the
+            # pseudonym, so one crown jewel would carry two names in one
+            # response depending on how many times it passed through here.
+            return record
         self.redacted_count += 1
         alias = self._alias(str(record.get('id', '')))
         masked = dict(record)

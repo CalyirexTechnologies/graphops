@@ -130,11 +130,23 @@ def test_a_garbage_bearer_token_is_refused(client):
 
 
 def test_an_unknown_tenant_answers_like_a_wrong_password(client):
-    response = client.post('/v1/auth/login', json={
+    """Compared whole, rather than checked against a remembered string.
+
+    The first version asserted the body was {'detail': 'invalid credentials'},
+    which pinned a shape rather than the property in this test's name. Since
+    a failed sign-in now also says how many tries are left, the property is
+    only kept if a tenant that does not exist counts down in exactly the same
+    way, and comparing the two responses is the test that says so.
+    """
+    ghost = client.post('/v1/auth/login', json={
         'organization': 'nosuchtenant', 'email': 'a@b.com',
         'password': 'a sufficiently long passphrase'})
-    assert response.status_code == 401
-    assert response.json()['detail'] == 'invalid credentials'
+    real = client.post('/v1/auth/login', json={
+        'organization': 'acme', 'email': 'viewer@acme.com',
+        'password': 'not the passphrase at all'})
+    assert ghost.status_code == real.status_code == 401
+    assert ghost.json() == real.json()
+    assert ghost.json()['error'] == 'invalid credentials'
 
 
 def test_login_then_me_reports_the_roles(client, auth_header):

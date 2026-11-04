@@ -179,29 +179,34 @@ def _time(fn):
 def run_one(shape, scale, verbose=True):
     """Time every question against one generated estate."""
     payload = BUILDERS[shape](scale)
-    estate = analysis.Estate(payload)
-    loaded = estate.load()
+    loaded = analysis.Estate(payload).load()
 
     rows = []
 
     def measure(label, fn, capped=None):
-        seconds, result = _time(fn)
+        # A fresh Estate per question. An estate memoises its loaded graph
+        # and its route enumeration, which is right for a console screen
+        # that asks four questions and wrong for a benchmark: the second
+        # question would ride on the first one's work and look cheaper than
+        # it is. Every number below is a cold answer.
+        estate = analysis.Estate(payload)
+        seconds, result = _time(lambda: fn(estate))
         rows.append({'query': label, 'seconds': seconds,
                      'result': result, 'capped': bool(capped and capped(result))})
         return result
 
     origin = payload['nodes'][0]['id']
 
-    measure('load', lambda: '%d nodes' % len(estate.load().graph.nodes))
+    measure('load', lambda e: '%d nodes' % len(e.load().graph.nodes))
     exposure = measure(
-        'exposure', lambda: analysis.exposure(estate),
+        'exposure', analysis.exposure,
         capped=lambda r: r.get('path_count', 0) >= 400)
-    measure('containment', lambda: analysis.containment(estate))
-    measure('blast_radius', lambda: analysis.blast_radius(estate, origin))
-    measure('critical_nodes', lambda: analysis.critical_nodes(estate))
-    measure('segments', lambda: analysis.segments(estate))
-    measure('over_privilege', lambda: analysis.over_privilege(estate))
-    measure('novel_activity', lambda: analysis.novel_activity(estate),
+    measure('containment', analysis.containment)
+    measure('blast_radius', lambda e: analysis.blast_radius(e, origin))
+    measure('critical_nodes', analysis.critical_nodes)
+    measure('segments', analysis.segments)
+    measure('over_privilege', analysis.over_privilege)
+    measure('novel_activity', analysis.novel_activity,
             capped=lambda r: r.get('new_reach_count', 0) >= 200)
 
     summary = {

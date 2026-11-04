@@ -60,6 +60,19 @@ class BlastRadiusRequest(BaseModel):
     hops: int = Field(default=3, ge=1, le=6)
 
 
+class CrownJewelRequest(BaseModel):
+    node_id: str = Field(min_length=1, max_length=256)
+    crown: bool = Field(description='True to mark, false to unmark.')
+    # Recorded with the decision and in the audit log. Optional because a
+    # required free-text field gets filled with "x", which is worse than
+    # nothing: it looks like a reason.
+    reason: str = Field(default='', max_length=500)
+
+
+class ImpersonationRequest(BaseModel):
+    user_id: str = Field(min_length=1, max_length=64)
+
+
 class DeliverFindingRequest(BaseModel):
     connector: str = Field(min_length=1, max_length=64)
     finding_id: str = Field(min_length=1, max_length=128)

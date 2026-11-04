@@ -21,7 +21,7 @@ from pathlib import Path
 
 #: Bumped whenever MIGRATIONS grows. Asserted in the test suite so a
 #: migration added without a version bump fails CI rather than production.
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 5
 
 MIGRATIONS: list[tuple[int, str]] = [
     (1, """
@@ -178,6 +178,64 @@ MIGRATIONS: list[tuple[int, str]] = [
 
     CREATE INDEX idx_runs_org ON connector_runs(organization_id, started_at);
     CREATE INDEX idx_findings_org ON findings(organization_id, status, severity);
+    """),
+
+    # Additive only: new tables and new nullable or defaulted columns, so the
+    # previous release runs unchanged against a database migrated to this.
+    (5, """
+    -- One row per ingest. Before this, running ingest threw its own result
+    -- away and the console had no "last ingest" to show. organization_id is
+    -- nullable because the ingest a server runs at startup belongs to no
+    -- tenant; it is what every tenant sees until it runs one of its own.
+    CREATE TABLE ingests (
+        id                  TEXT PRIMARY KEY,
+        organization_id     TEXT REFERENCES organizations(id),
+        actor_id            TEXT,
+        mode                TEXT NOT NULL,
+        status              TEXT NOT NULL,
+        started_at          INTEGER NOT NULL,
+        finished_at         INTEGER NOT NULL,
+        as_of               TEXT,
+        connectors_run      INTEGER NOT NULL DEFAULT 0,
+        connectors_failed   INTEGER NOT NULL DEFAULT 0,
+        merged              INTEGER NOT NULL DEFAULT 0,
+        entities            INTEGER NOT NULL DEFAULT 0,
+        relationships       INTEGER NOT NULL DEFAULT 0,
+        -- Each connector's result for this ingest, as JSON. Kept on the row
+        -- rather than in connector_runs, whose organization_id is NOT NULL
+        -- and so cannot hold the startup ingest that belongs to no tenant.
+        runs                TEXT NOT NULL DEFAULT '[]'
+    );
+    CREATE INDEX idx_ingests_org ON ingests(organization_id, finished_at);
+
+    -- A tenant saying which systems matter, over what its sources said.
+    -- One row per node, the latest decision, with who made it and why. The
+    -- history is in the audit log.
+    CREATE TABLE crown_overrides (
+        organization_id     TEXT NOT NULL REFERENCES organizations(id),
+        node_id             TEXT NOT NULL,
+        crown               INTEGER NOT NULL,
+        reason              TEXT NOT NULL DEFAULT '',
+        set_by              TEXT,
+        set_at              INTEGER NOT NULL,
+        PRIMARY KEY (organization_id, node_id)
+    );
+
+    -- Failed sign-ins for addresses with no account. Counted exactly as a
+    -- real account's are, so that a lockout cannot be used to learn which
+    -- addresses have accounts: without this, five tries at a real address
+    -- lock it and five at a made-up one never do.
+    CREATE TABLE login_failures (
+        organization_id     TEXT NOT NULL,
+        email               TEXT NOT NULL,
+        failed_attempts     INTEGER NOT NULL DEFAULT 0,
+        locked_until        INTEGER,
+        PRIMARY KEY (organization_id, email)
+    );
+
+    -- When a finding stopped being true. A fix that worked is a finding that
+    -- resolves on the next ingest, and saying so closes the loop.
+    ALTER TABLE findings ADD COLUMN resolved_at INTEGER;
     """),
 ]
 
