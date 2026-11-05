@@ -33,6 +33,10 @@ run on the standard library, which is enforced in CI by a job that imports
 them on a clean interpreter and fails if anything outside the standard
 library was pulled in.
 
+They need **Python 3.10 or newer**, which CI tests on 3.10, 3.11 and 3.12.
+The `python3` macOS ships is 3.9 and stops at `itertools.pairwise`; on a Mac,
+use a newer Python, for example `python3.12` from Homebrew.
+
 The API and the Neo4j backend are optional extras:
 
 ```bash
