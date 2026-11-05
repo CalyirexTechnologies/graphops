@@ -572,6 +572,9 @@ def novel_activity(estate, window_hours=24, max_hops=2, now=None):
         'new_edge_count': len(new_edges),
         'new_reach': new_reach[:50],
         'new_reach_count': len(new_reach),
+        # Over every new reach found, not the 50 returned, so a caller never
+        # has to count the flag over a truncated list.
+        'unflagged_count': sum(1 for r in new_reach if r['unflagged_by_rules']),
         'incidents': [[current.describe(n) for n in group]
                       for group in clusters if len(group) > 1][:20],
     }

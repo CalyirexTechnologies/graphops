@@ -218,3 +218,30 @@ def test_a_replay_and_a_week_later_give_the_same_answers(connector_estate):
     assert (analysis.over_privilege(connector_estate)['exercised']
             == analysis.over_privilege(connector_estate, now=connector_estate.now())['exercised'])
     assert analysis.over_privilege(connector_estate, now=later)['granted'] == 9
+
+
+# ------------------------------------------- new reach, and the rules on it
+
+def _new_reach_finding(estate):
+    return next(f for f in findings.derive(estate) if f['kind'] == 'novel-activity')
+
+
+def test_the_new_reach_finding_claims_no_rule_only_where_none_fired(connector_estate):
+    """A Sentinel rule fires on every one of the connector estate's six new
+    routes. The finding used to say all six came "from steps no rule fired
+    on", which the engine's own flag contradicts."""
+    novel = analysis.novel_activity(connector_estate)
+    finding = _new_reach_finding(connector_estate)
+    assert novel['new_reach_count'] == 6 and novel['unflagged_count'] == 0
+    assert 'no rule fired' not in finding['title']
+    assert 'rule fired on' in finding['title']
+    assert finding['severity'] == 'medium' and finding['unflagged'] == 0
+
+
+def test_the_new_reach_finding_counts_the_quiet_routes_it_names(synthetic_estate):
+    novel = analysis.novel_activity(synthetic_estate)
+    finding = _new_reach_finding(synthetic_estate)
+    quiet = sum(1 for r in novel['new_reach'] if r['unflagged_by_rules'])
+    assert novel['unflagged_count'] == quiet == 2 and novel['new_reach_count'] == 3
+    assert '2 of them by steps no rule fired on' in finding['title']
+    assert finding['severity'] == 'high'

@@ -211,23 +211,43 @@ def derive(estate) -> list[dict]:
             'remediation': remediation,
         })
 
-    # ---- new structure nothing alerted on -------------------------------
+    # ---- new structure, and whether anything alerted on it --------------
+    # The title used to say every new reach came "from steps no rule fired
+    # on" while counting all of them. On the connector estate a Sentinel
+    # rule fires on each of the six routes, so the claim was false there,
+    # and on the demo estate it was true of two of three. The claim is now
+    # made only of the routes it is true of, and the severity follows it:
+    # a new reach the rules cannot see is the high finding, and one they
+    # already alert on is worth reading for what the alert leaves out.
     novel = analysis.novel_activity(estate)
-    unflagged = int(novel.get('new_reach_count', 0) or 0)
-    if unflagged:
+    reached = int(novel.get('new_reach_count', 0) or 0)
+    quiet = int(novel.get('unflagged_count', 0) or 0)
+    window = novel.get('window_hours')
+    if reached:
+        if quiet == reached:
+            title = ('%d newly reachable systems in the last %sh, from steps '
+                     'no rule fired on' % (reached, window))
+        elif quiet:
+            title = ('%d newly reachable systems in the last %sh, %d of them by '
+                     'steps no rule fired on' % (reached, window, quiet))
+        else:
+            title = ('%d newly reachable systems in the last %sh, each by a '
+                     'route a detection rule fired on' % (reached, window))
         produced.append({
-            'id': fingerprint('novel-reach', str(novel.get('window_hours'))),
-            'fingerprint': fingerprint('novel-reach',
-                                       str(novel.get('window_hours'))),
+            'id': fingerprint('novel-reach', str(window)),
+            'fingerprint': fingerprint('novel-reach', str(window)),
             'kind': 'novel-activity',
-            'severity': 'high',
-            'title': ('%d newly reachable systems in the last %sh, from steps '
-                      'no rule fired on'
-                      % (unflagged, novel.get('window_hours'))),
-            'routes': unflagged,
+            'severity': 'high' if quiet else 'medium',
+            'title': title,
+            'routes': reached,
+            'unflagged': quiet,
             'target': 'newly reachable systems',
-            'remediation': ('Each individual step here looks ordinary. The '
-                            'structure is what is new.'),
+            'remediation': (
+                'Each individual step here looks ordinary. The structure is '
+                'what is new.' if quiet else
+                'A rule fired on a step of each route, and the alert names '
+                'that step. It does not say what the actor can now reach, '
+                'which is what the graph adds.'),
         })
 
     order = {name: index for index, name in enumerate(SEVERITIES)}
