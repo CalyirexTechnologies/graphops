@@ -343,7 +343,7 @@ Cheapest route to regulated data, effort 2.0
     never used it. Each record alone is unremarkable.</p>
     <p style="margin-top:3mm"><strong>Entity resolution is what makes that
     work, and it was a real bug first.</strong> Okta calls the card store
-    <code>billing-database</code> and files it as an application; ServiceNow
+    <code>billing-database</code> and files it as an application. ServiceNow
     calls it <code>billing-database</code> and classifies it PCI. Two nodes.
     Okta's entitlement pointed at one and ServiceNow's classification sat on
     the other, so the query that should say "support-desk can reach regulated
@@ -441,8 +441,8 @@ mesh estate, 3,001 nodes, 17,955 edges
       data is a concentrated target. The adversary the design worries about
       most is a legitimate low-privilege user.</p>
       <p style="margin-top:4mm">So <code>crown:reveal</code> is a permission
-      of its own. Everything else in a security product is read-or-write;
-      this one splits reading a path from reading what sits at the end of
+      of its own. Everything else in a security product is read-or-write.
+      This one splits reading a path from reading what sits at the end of
       it. An auditor runs the same query and gets the same three routes.</p>
       <pre>GET /v1/graph/exposure
 
@@ -479,7 +479,7 @@ auditor  2.0  192.0.2.41 -> svc-deploy
         something downstream already reads it.</li>
         <li><strong>SOC 2, ISO 27001, CIS</strong> assessed from graph
         evidence, and <em>never</em> reported satisfied. Only not-satisfied or
-        not-assessed: the graph can prove a control is contradicted, not that
+        not-assessed, because the graph can prove a control is contradicted, not that
         one operates.</li>
       </ul>
       <p style="margin-top:4mm"><strong>358 tests, 84% coverage.</strong> The
@@ -513,8 +513,8 @@ auditor  2.0  192.0.2.41 -> svc-deploy
         <li>The business is invented and the addresses route nowhere.</li>
         <li>The recordings are synthetic, written from each vendor's
         documentation, not captured from anyone's tenant. Until 5 November
-        the live paths had never run, and checked against the documentation
-        most were wrong: CrowdStrike still called the Detects API, retired in
+        the live paths had never run. Checked against the documentation, most
+        were wrong, and CrowdStrike still called the Detects API, retired in
         September 2025. They are rewritten and tested now, and no real tenant
         has answered them yet.</li>
         <li>The estate is hand-authored, so the numbers here are the numbers
