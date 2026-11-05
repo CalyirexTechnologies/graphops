@@ -1,0 +1,542 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>GraphOps</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=IBM+Plex+Mono:wght@400;500;600&display=block" rel="stylesheet">
+<style>
+  /* 16:9 at 1280 x 720 CSS pixels, which prints as 13.333 x 7.5 inches. */
+  @page { size: 13.333in 7.5in; margin: 0; }
+  :root {
+    --paper: #fbf8f4; --ink: #171412; --red: #e32e12; --muted: #4b4643;
+    --faint: #857e78; --rule: #e6dfd6; --panel: #f1ece6; --tint: #fbe3de;
+    --wide: 'Archivo', 'Arial Black', sans-serif;
+    --body: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    --mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--paper); }
+  body { font: 15px/1.45 var(--body); color: var(--ink);
+         -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .slide { width: 1280px; height: 720px; position: relative; overflow: hidden;
+           padding: 52px 64px 48px; background: var(--paper);
+           page-break-after: always; break-after: page; display: flex; flex-direction: column; }
+  .slide:last-child { page-break-after: auto; break-after: auto; }
+
+  /* Header row on content slides */
+  .top { display: flex; justify-content: space-between; font: 500 11px/1 var(--mono);
+         letter-spacing: .22em; text-transform: uppercase; color: var(--faint); }
+  h1, h2 { font-family: var(--wide); font-stretch: 125%; font-weight: 800; text-transform: uppercase;
+           letter-spacing: .01em; margin: 0; color: var(--ink); }
+  h2 { font-size: 34px; line-height: 1.08; margin-top: 26px; }
+  .lead { margin: 12px 0 0; font-size: 16px; color: var(--muted); max-width: 980px; }
+  h3 { font: 700 17px/1.25 var(--body); margin: 0 0 8px; }
+  p { margin: 0; }
+  .muted { color: var(--muted); }
+  .red { color: var(--red); }
+  code, .m { font: 500 13px/1.3 var(--mono); }
+  .cap { font: 600 11px/1.2 var(--mono); letter-spacing: .2em; text-transform: uppercase; color: var(--red); }
+  .capg { font: 500 11px/1.2 var(--mono); letter-spacing: .2em; text-transform: uppercase; color: var(--faint); }
+  .grow { flex: 1; }
+  .bottom { margin-top: auto; }
+
+  /* Icon blocks */
+  .blocks { display: grid; gap: 0; margin-top: 40px; }
+  .blocks.c3 { grid-template-columns: repeat(3, 1fr); }
+  .blocks.c4 { grid-template-columns: repeat(4, 1fr); }
+  .blocks.c2 { grid-template-columns: repeat(2, 1fr); }
+  .block { padding: 0 26px; border-left: 1px solid var(--rule); }
+  .block:first-child { padding-left: 0; border-left: 0; }
+  .block .ic { width: 26px; height: 26px; color: var(--red); margin-bottom: 14px; display: block; }
+  .block p { font-size: 15px; color: var(--muted); }
+  .ic { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* Big numbers */
+  .nums { display: grid; gap: 0; margin-top: 34px; }
+  .nums.c4 { grid-template-columns: repeat(4, 1fr); }
+  .nums.c3 { grid-template-columns: repeat(3, 1fr); }
+  .num { padding: 0 24px; border-left: 1px solid var(--rule); }
+  .num:first-child { padding-left: 0; border-left: 0; }
+  .num b { display: block; font: 800 64px/1 var(--wide); font-stretch: 112%; letter-spacing: -.01em; }
+  .num span { display: block; margin-top: 10px; font-size: 14px; color: var(--muted); }
+
+  /* Route chain */
+  .chain { display: flex; align-items: center; gap: 0; flex-wrap: nowrap; }
+  .node { font: 600 15px/1 var(--mono); padding: 11px 14px; border: 1.5px solid var(--ink);
+          border-radius: 999px; white-space: nowrap; background: var(--paper); }
+  .node.crown { border-color: var(--red); color: var(--red); }
+  .node.out { border-style: dashed; }
+  .hop { flex: 1; min-width: 120px; position: relative; text-align: center; padding: 0 10px; }
+  .hop::before { content: ''; position: absolute; left: 0; right: 10px; top: 50%;
+                 border-top: 1.5px dashed var(--red); }
+  .hop::after { content: ''; position: absolute; right: 2px; top: calc(50% - 5px);
+                border: 5px solid transparent; border-left: 8px solid var(--red); }
+  .hop span { position: relative; top: -16px; background: var(--paper); padding: 0 6px;
+              font: 500 10.5px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+  .hop small { position: relative; top: 17px; display: block; font: 500 10.5px/1 var(--mono); color: var(--faint); letter-spacing: .1em; }
+  .panel { background: var(--panel); border-radius: 10px; padding: 26px 30px; }
+
+  /* Tables */
+  table { border-collapse: collapse; width: 100%; }
+  th { font: 500 10.5px/1.2 var(--mono); letter-spacing: .2em; text-transform: uppercase; color: var(--faint);
+       text-align: left; padding: 0 14px 10px 0; border-bottom: 1.5px solid var(--ink); }
+  td { padding: 12px 14px 12px 0; border-bottom: 1px solid var(--rule); vertical-align: top; font-size: 15px; }
+  td.k { font: 600 11px/1.5 var(--mono); letter-spacing: .18em; text-transform: uppercase; color: var(--red); white-space: nowrap; }
+  td.r, th.r { text-align: right; }
+  td .m { font-size: 13.5px; }
+
+  /* Dark divider */
+  .divider { background: var(--ink); color: #fff; justify-content: flex-end; padding-bottom: 46px; }
+  .divider .big { font: 900 190px/0.82 var(--wide); font-stretch: 112%; color: var(--red); letter-spacing: -.02em; }
+  .divider h1 { color: #fff; font-size: 46px; margin-top: 22px; }
+  .divider .sub { color: #cfc8c1; font-size: 17px; margin-top: 10px; }
+  .divider .foot { display: flex; justify-content: space-between; align-items: center; margin-top: 30px; }
+  .dots { display: flex; gap: 9px; }
+  .dots i { width: 8px; height: 8px; border-radius: 50%; background: #5a5450; display: block; }
+  .dots i.on { background: var(--red); }
+  .divider .capg { color: #8d857f; }
+
+  /* Cover */
+  .cover { padding: 64px 72px; }
+  .mark { display: flex; align-items: center; gap: 14px; color: var(--red);
+          font: 800 24px/1 var(--wide); font-stretch: 125%; letter-spacing: .08em; }
+  .mark svg { width: 34px; height: 34px; }
+  .cover h1 { font-size: 56px; line-height: 1.04; margin-top: 150px; }
+  .cover .sub { margin-top: 26px; font-size: 19px; color: var(--muted); max-width: 820px; }
+
+  /* Contents */
+  .toc { margin-top: 26px; border-top: 1px solid var(--rule); }
+  .toc .row { display: grid; grid-template-columns: 120px 1fr; padding: 17px 0; border-bottom: 1px solid var(--rule); align-items: baseline; }
+  .toc .n { font: 800 34px/1 var(--wide); font-stretch: 112%; color: var(--red); }
+  .toc h3 { margin: 0 0 4px; font-size: 19px; }
+  .toc p { color: var(--muted); font-size: 15px; }
+
+  /* Closing */
+  .closing { background: var(--red); color: #fff; }
+  .closing h1 { color: #fff; font-size: 52px; margin-top: 70px; }
+  .closing .cap { color: #fff; opacity: .85; }
+  .closing .blocks .block { border-color: rgba(255,255,255,.35); }
+  .closing .block p { color: #fff; opacity: .92; }
+  .closing .block h3 { color: #fff; }
+  .closing .block .ic { color: #fff; }
+
+  figure { margin: 0; }
+  figure img { width: 100%; display: block; border: 1px solid var(--rule); border-radius: 8px; }
+  .note { font-size: 15px; color: var(--muted); }
+  .note b { color: var(--ink); }
+  .strip { display: flex; gap: 0; border-top: 1.5px solid var(--ink); padding-top: 16px; }
+  .strip div { flex: 1; padding: 0 20px; border-left: 1px solid var(--rule); }
+  .strip div:first-child { padding-left: 0; border-left: 0; }
+  .strip b { display: block; font: 800 26px/1 var(--wide); font-stretch: 112%; }
+  .strip span { display: block; margin-top: 6px; font-size: 13px; color: var(--muted); }
+  .ring { display: block; }
+</style>
+</head>
+<body>
+
+<!-- Icons, drawn once and reused -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></symbol>
+    <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 18h10.5a4 4 0 0 0 .4-7.98A6 6 0 0 0 6.3 9.4 4.3 4.3 0 0 0 7 18z"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 20.5a2 2 0 0 0 4 0"/></symbol>
+    <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="15.5" r="4"/><path d="M11 12.5l9-9M16.5 7l3 3M14 9.5l2 2"/></symbol>
+    <symbol id="i-route" viewBox="0 0 24 24"><circle cx="5" cy="18" r="2.5"/><circle cx="19" cy="6" r="2.5"/><path d="M7.5 18H15a3.5 3.5 0 0 0 0-7H9a3.5 3.5 0 0 1 0-7h7.5"/></symbol>
+    <symbol id="i-merge" viewBox="0 0 24 24"><circle cx="6" cy="5" r="2.5"/><circle cx="18" cy="5" r="2.5"/><circle cx="12" cy="19" r="2.5"/><path d="M6 7.5c0 5 6 5 6 9M18 7.5c0 5-6 5-6 9"/></symbol>
+    <symbol id="i-graph" viewBox="0 0 24 24"><circle cx="5" cy="12" r="2.5"/><circle cx="19" cy="5" r="2.5"/><circle cx="19" cy="19" r="2.5"/><circle cx="12" cy="12" r="1.5"/><path d="M7.5 12h3M13.3 11.2l3.6-4.6M13.3 12.8l3.6 4.6"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4.5" y="10.5" width="15" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></symbol>
+    <symbol id="i-screen" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12.5" rx="1.5"/><path d="M8.5 20.5h7M12 16.5v4"/></symbol>
+    <symbol id="i-cut" viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M8.3 7.8L20 18M8.3 16.2L20 6"/></symbol>
+    <symbol id="i-stream" viewBox="0 0 24 24"><path d="M3 8c3-3 6 3 9 0s6 3 9 0M3 16c3-3 6 3 9 0s6 3 9 0"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.8 2.8L16.5 9.5"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></symbol>
+  </defs>
+</svg>
+
+<!-- 1 cover -->
+<section class="slide cover">
+  <div class="mark"><svg class="ic" viewBox="0 0 24 24" style="stroke-width:2"><use href="#i-graph"/></svg>GRAPHOPS</div>
+  <h1>The routes to your data,<br>and where to cut them</h1>
+  <p class="sub">A security knowledge graph built from nine tools a SOC already runs, for threat hunting and blast radius containment.</p>
+  <div class="bottom capg">hackFront India &nbsp;·&nbsp; Cybersecurity &nbsp;·&nbsp; Neo4j track</div>
+</section>
+
+<!-- 2 contents -->
+<section class="slide">
+  <div class="top"><span>Contents</span><span>02</span></div>
+  <h2>What we will cover</h2>
+  <div class="toc">
+    <div class="row"><span class="n">01</span><div><h3>The problem</h3><p>Four records of one attack, held by four different tools.</p></div></div>
+    <div class="row"><span class="n">02</span><div><h3>The graph</h3><p>Nine sources joined into one estate.</p></div></div>
+    <div class="row"><span class="n">03</span><div><h3>Five questions</h3><p>Routes, blast radius, new reach, unused access and what to cut first.</p></div></div>
+    <div class="row"><span class="n">04</span><div><h3>The product</h3><p>The console, the roles and what each role may see.</p></div></div>
+    <div class="row"><span class="n">05</span><div><h3>Evidence</h3><p>A second engine, a benchmark, the tests and what is not real.</p></div></div>
+  </div>
+</section>
+
+<!-- 3 divider 01 -->
+<section class="slide divider">
+  <div class="big">01</div>
+  <h1>The problem</h1>
+  <p class="sub">Four records of one attack, held by four different tools.</p>
+  <div class="foot"><div class="dots"><i class="on"></i><i></i><i></i><i></i><i></i></div><span class="capg">Section 01 of 05</span></div>
+</section>
+
+<!-- 4 -->
+<section class="slide">
+  <div class="top"><span>01 · The problem</span><span>04</span></div>
+  <h2>Four records of one attack</h2>
+  <div class="blocks c4">
+    <div class="block"><svg class="ic"><use href="#i-search"/></svg><h3>Splunk</h3><p>192.0.2.41 has only ever requested <code>/login</code>.</p></div>
+    <div class="block"><svg class="ic"><use href="#i-cloud"/></svg><h3>CloudTrail</h3><p>Five hours before this snapshot, the same address assumed the <code>svc-deploy</code> role.</p></div>
+    <div class="block"><svg class="ic"><use href="#i-bell"/></svg><h3>Sentinel</h3><p>One alert, an anomalous role assumption. It names the role and not what the role can reach.</p></div>
+    <div class="block"><svg class="ic"><use href="#i-key"/></svg><h3>Okta</h3><p><code>svc-deploy</code> has held access to the nightly backups since 24 September.</p></div>
+  </div>
+  <div class="panel bottom">
+    <div class="cap" style="margin-bottom:26px">Joined in the graph</div>
+    <div class="chain">
+      <span class="node out">192.0.2.41</span>
+      <span class="hop"><span>Credential access</span><small>T1078 · CloudTrail, Sentinel</small></span>
+      <span class="node">svc-deploy</span>
+      <span class="hop"><span>Privilege escalation</span><small>T1078.004 · Okta</small></span>
+      <span class="node crown">s3://nightly-backups</span>
+    </div>
+    <p class="note" style="margin-top:30px">A two-step route from outside to the backups, at attacker effort 2.0, the lowest on this estate. No single tool holds it.</p>
+  </div>
+</section>
+
+<!-- 5 -->
+<section class="slide">
+  <div class="top"><span>01 · The problem</span><span>05</span></div>
+  <h2>What the brief asks for</h2>
+  <table style="margin-top:30px">
+    <tr><th style="width:34%">The brief asks for</th><th>Answered by</th><th class="r" style="width:10%">Slide</th></tr>
+    <tr><td>A knowledge graph from security telemetry</td><td class="muted">9 inbound sources, 7 node kinds, 7 edge kinds, resolved into one estate</td><td class="r">07</td></tr>
+    <tr><td>Attack paths before they are used, with choke points</td><td class="muted">Every route to a crown jewel, ranked by attacker effort with Dijkstra</td><td class="r">10</td></tr>
+    <tr><td>Blast radius at one, two and three hops</td><td class="muted">A bounded walk from any compromised system</td><td class="r">11</td></tr>
+    <tr><td>Anomalies from structure, not rules</td><td class="muted">The graph now against the graph before the window, plus Louvain segments</td><td class="r">12</td></tr>
+    <tr><td>Zero trust, access used against access granted</td><td class="muted">Entitlements from the identity provider against use from the logs</td><td class="r">13</td></tr>
+    <tr><td>Containment</td><td class="muted">Each cut made and the search run again</td><td class="r">14</td></tr>
+    <tr><td>Centrality</td><td class="muted">PageRank on the reversed graph, outside addresses excluded</td><td class="r">10</td></tr>
+  </table>
+</section>
+
+<!-- 6 divider 02 -->
+<section class="slide divider">
+  <div class="big">02</div>
+  <h1>The graph</h1>
+  <p class="sub">Nine sources joined into one estate.</p>
+  <div class="foot"><div class="dots"><i class="on"></i><i class="on"></i><i></i><i></i><i></i></div><span class="capg">Section 02 of 05</span></div>
+</section>
+
+<!-- 7 -->
+<section class="slide">
+  <div class="top"><span>02 · The graph</span><span>07</span></div>
+  <h2>Nine sources in, four out</h2>
+  <table style="margin-top:28px">
+    <tr><th style="width:22%">Category</th><th>Source</th><th style="width:44%">What it adds to the graph</th></tr>
+    <tr><td class="k">SIEM</td><td>Splunk, Microsoft Sentinel</td><td class="muted">Requests, the rules that fired, incident entities</td></tr>
+    <tr><td class="k">EDR</td><td>CrowdStrike Falcon</td><td class="muted">Alerts, and which account each host held</td></tr>
+    <tr><td class="k">Identity</td><td>Okta, Microsoft Entra ID</td><td class="muted">Who is entitled to what, and from Okta's log, whether it was used</td></tr>
+    <tr><td class="k">Cloud</td><td>AWS CloudTrail</td><td class="muted">Roles assumed and resources read</td></tr>
+    <tr><td class="k">Vulnerability</td><td>Qualys, Tenable</td><td class="muted">Weaknesses on each host, with CVEs</td></tr>
+    <tr><td class="k">CMDB</td><td>ServiceNow</td><td class="muted">Which systems hold regulated data</td></tr>
+    <tr><td class="k">Out</td><td>Jira, Slack, Teams, PagerDuty</td><td class="muted">A finding sent as an issue, a message or a page</td></tr>
+  </table>
+  <div class="strip bottom">
+    <div><b>35</b><span>entities</span></div>
+    <div><b>47</b><span>relationships</span></div>
+    <div><b>3</b><span>duplicates merged across sources</span></div>
+    <div><b>9 of 9</b><span>sources ran clean in replay</span></div>
+  </div>
+</section>
+
+<!-- 8 -->
+<section class="slide">
+  <div class="top"><span>02 · The graph</span><span>08</span></div>
+  <h2>Two choices every answer depends on</h2>
+  <div class="blocks c2" style="margin-top:36px">
+    <div class="block" style="padding-right:40px">
+      <svg class="ic"><use href="#i-route"/></svg>
+      <h3>Edges point the way an attacker moves</h3>
+      <p>A trail record says an identity acted from an address. Stored that way, every search stops at the first address. Stored the way an attacker travels, the address yields the identity.</p>
+      <div class="panel" style="margin-top:22px;padding:22px 22px 24px">
+        <div class="capg" style="margin-bottom:22px">Stored as</div>
+        <div class="chain">
+          <span class="node out" style="font-size:13px">192.0.2.41</span>
+          <span class="hop" style="min-width:80px"><span>yields</span></span>
+          <span class="node" style="font-size:13px">svc-deploy</span>
+        </div>
+      </div>
+    </div>
+    <div class="block" style="padding-left:40px">
+      <svg class="ic"><use href="#i-merge"/></svg>
+      <h3>One system is one node</h3>
+      <p>Okta files the card store as an application. ServiceNow files it as a PCI asset. Left as two nodes, the question of who can reach regulated data returned nothing.</p>
+      <div class="panel" style="margin-top:22px;padding:22px 22px 24px">
+        <div class="capg" style="margin-bottom:14px">Resolved</div>
+        <table>
+          <tr><td style="padding:6px 0;border:0" class="m">okta · application</td><td rowspan="2" style="border:0;vertical-align:middle;padding:0 0 0 12px" class="m red">→ &nbsp;billing-database</td></tr>
+          <tr><td style="padding:6px 0;border:0" class="m">servicenow · PCI asset</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+  <p class="note bottom">Every edge also carries its MITRE ATT&amp;CK tactic, so a route reads as a kill chain.</p>
+</section>
+
+<!-- 9 divider 03 -->
+<section class="slide divider">
+  <div class="big">03</div>
+  <h1>Five questions</h1>
+  <p class="sub">Asked of a sample estate of 27 entities and 42 relationships.</p>
+  <div class="foot"><div class="dots"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></div><span class="capg">Section 03 of 05</span></div>
+</section>
+
+<!-- 10 -->
+<section class="slide">
+  <div class="top"><span>03 · Five questions</span><span>10</span></div>
+  <h2>Which routes reach a crown jewel</h2>
+  <div class="nums c4">
+    <div class="num"><b>12</b><span>routes from the internet</span></div>
+    <div class="num"><b>2</b><span>hops, on every one of them</span></div>
+    <div class="num"><b>2.0</b><span>lowest attacker effort, against 5.0 for the highest</span></div>
+    <div class="num"><b class="red">5</b><span>of the 12 cross <code>/api/orders</code></span></div>
+  </div>
+  <table class="bottom">
+    <tr><th style="width:10%">Effort</th><th>Route</th><th style="width:36%">The two steps</th></tr>
+    <tr><td><b>2.0</b></td><td class="m">192.0.2.133 → support-desk → billing-database</td><td class="muted">A taken credential, then a grant nobody has used</td></tr>
+    <tr><td><b>3.0</b></td><td class="m">203.0.113.77 → finance-admin → hr-database</td><td class="muted">A taken credential, then a lateral step</td></tr>
+    <tr><td><b>5.0</b></td><td class="m">198.51.100.21 → /api/orders → billing-database</td><td class="muted">A request to a public endpoint, then a lateral step</td></tr>
+  </table>
+  <p class="note" style="margin-top:16px">Every route is two hops, so hop count ranks them all the same. Effort separates them. PageRank, run on its own over the reversed graph, also puts <code>/api/orders</code> first among the systems this business controls.</p>
+</section>
+
+<!-- 11 -->
+<section class="slide">
+  <div class="top"><span>03 · Five questions</span><span>11</span></div>
+  <h2>What one breach puts in reach</h2>
+  <p class="lead">If <code>order-service</code> is taken, this is the neighbourhood an analyst needs while the incident is still open.</p>
+  <div style="display:grid;grid-template-columns:420px 1fr;gap:56px;align-items:center;margin-top:20px" class="grow">
+    <svg class="ring" viewBox="0 0 400 400" width="400" height="400" aria-label="Rings at one, two and three hops">
+      <circle cx="200" cy="200" r="190" fill="#f1ece6" stroke="#e6dfd6"/>
+      <circle cx="200" cy="200" r="130" fill="#ebe4dc" stroke="#e6dfd6"/>
+      <circle cx="200" cy="200" r="72" fill="#fbe3de" stroke="#f3c2b8"/>
+      <circle cx="200" cy="200" r="22" fill="#e32e12"/>
+      <text x="200" y="244" text-anchor="middle" font-family="IBM Plex Mono" font-size="12" fill="#4b4643">1 HOP · 2</text>
+      <text x="200" y="314" text-anchor="middle" font-family="IBM Plex Mono" font-size="12" fill="#4b4643">2 HOPS · 6</text>
+      <text x="200" y="374" text-anchor="middle" font-family="IBM Plex Mono" font-size="12" fill="#4b4643">3 HOPS · 8</text>
+      <circle cx="262" cy="96" r="9" fill="#fbf8f4" stroke="#e32e12" stroke-width="2.5"/>
+      <text x="278" y="100" font-family="IBM Plex Mono" font-size="12" fill="#e32e12">billing-database</text>
+    </svg>
+    <div>
+      <div class="nums c3" style="margin-top:0">
+        <div class="num"><b>2</b><span>at one hop</span></div>
+        <div class="num"><b>6</b><span>at two hops</span></div>
+        <div class="num"><b>8</b><span>at three hops</span></div>
+      </div>
+      <p class="note" style="margin-top:34px"><b>16 systems in reach.</b> One of them, two hops out, is <code>billing-database</code>, which turns the incident into a reportable breach.</p>
+      <p class="note" style="margin-top:12px">Each system is counted at the shallowest hop that reaches it, so no ring is padded by a longer walk that arrives there too.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 12 -->
+<section class="slide">
+  <div class="top"><span>03 · Five questions</span><span>12</span></div>
+  <h2>A new route that no rule saw</h2>
+  <div class="nums c3">
+    <div class="num"><b>2</b><span>relationships first seen in the last 24 hours</span></div>
+    <div class="num"><b>3</b><span>actors that now reach somewhere new</span></div>
+    <div class="num"><b class="red">2</b><span>of them by steps no rule has ever fired on</span></div>
+  </div>
+  <div class="panel bottom">
+    <div class="cap" style="margin-bottom:26px">New in the last 24 hours</div>
+    <div class="chain">
+      <span class="node out">192.0.2.41</span>
+      <span class="hop"><span>Credential access</span><small>no rule fired</small></span>
+      <span class="node">svc-deploy</span>
+      <span class="hop"><span>Privilege escalation</span><small>no rule fired</small></span>
+      <span class="node crown">s3://nightly-backups</span>
+    </div>
+    <p class="note" style="margin-top:30px">Each step looks ordinary. The route is what is new, found by walking the graph as it is and as it stood before the window. Louvain splits this estate into 6 segments, and the 2 with new activity include the one holding the backups.</p>
+  </div>
+</section>
+
+<!-- 13 -->
+<section class="slide">
+  <div class="top"><span>03 · Five questions</span><span>13</span></div>
+  <h2>Access granted against access used</h2>
+  <div class="nums c4">
+    <div class="num"><b>6</b><span>grants on the estate</span></div>
+    <div class="num"><b>4</b><span>ever used</span></div>
+    <div class="num"><b class="red">2</b><span>never used</span></div>
+    <div class="num"><b class="red">2 of 2</b><span>unused grants reach a crown jewel</span></div>
+  </div>
+  <table style="margin-top:40px">
+    <tr><th>Identity</th><th>May reach</th><th>Crown jewel</th><th class="r">Last used</th></tr>
+    <tr><td class="m">support-desk</td><td class="m">billing-database</td><td>Yes</td><td class="r red"><b>Never</b></td></tr>
+    <tr><td class="m">support-desk</td><td class="m">hr-database</td><td>Yes</td><td class="r red"><b>Never</b></td></tr>
+  </table>
+  <p class="note bottom">The cheapest route on slide 10 runs through the first of these. Nobody has to be attacked for it to be worth revoking. Where a source reports no use at all, as Entra does for directory roles, the grant is called unverified rather than unused.</p>
+</section>
+
+<!-- 14 -->
+<section class="slide">
+  <div class="top"><span>03 · Five questions</span><span>14</span></div>
+  <h2>Which cut to make first</h2>
+  <p class="lead">Each row was measured by making the cut and searching again.</p>
+  <table style="margin-top:26px">
+    <tr><th style="width:26%">Cut</th><th style="width:22%">Routes removed</th><th>Out of reach afterwards</th></tr>
+    <tr><td class="m"><b>svc-deploy</b></td><td>1 of 12</td><td class="m red"><b>s3://nightly-backups</b></td></tr>
+    <tr><td class="m">/api/orders</td><td>5 of 12</td><td class="muted">Nothing</td></tr>
+    <tr><td class="m">/admin</td><td>3 of 12</td><td class="muted">Nothing</td></tr>
+    <tr><td class="m">support-desk</td><td>2 of 12</td><td class="muted">Nothing</td></tr>
+  </table>
+  <div class="blocks c2 bottom">
+    <div class="block" style="padding-right:36px"><svg class="ic"><use href="#i-cut"/></svg><h3>The busiest choke point protects nothing</h3><p>Ranked by routes removed, the first version recommended <code>/api/orders</code>. Crown jewels now rank first.</p></div>
+    <div class="block" style="padding-left:36px"><svg class="ic"><use href="#i-key"/></svg><h3>A revocation goes on the same list</h3><p>Removing a grant nobody has used is weighed against taking a system down, and needs no downtime.</p></div>
+  </div>
+</section>
+
+<!-- 15 divider 04 -->
+<section class="slide divider">
+  <div class="big">04</div>
+  <h1>The product</h1>
+  <p class="sub">The console, the roles and what each role may see.</p>
+  <div class="foot"><div class="dots"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div><span class="capg">Section 04 of 05</span></div>
+</section>
+
+<!-- 16 -->
+<section class="slide">
+  <div class="top"><span>04 · The product</span><span>16</span></div>
+  <h2>One screen per question</h2>
+  <div style="display:grid;grid-template-columns:1fr 330px;gap:40px;margin-top:26px" class="grow">
+    <figure><img src="shots/console-exposure.png" alt="The exposure screen with the route map, the routes and the ranked fixes"></figure>
+    <div style="display:flex;flex-direction:column;gap:26px">
+      <div><svg class="ic" style="width:24px;height:24px;color:var(--red);display:block;margin-bottom:10px"><use href="#i-screen"/></svg><h3>The answer first</h3><p class="note">The overview says whether anyone outside can reach a crown jewel, and how cheaply.</p></div>
+      <div><svg class="ic" style="width:24px;height:24px;color:var(--red);display:block;margin-bottom:10px"><use href="#i-cut"/></svg><h3>Fixes beside routes</h3><p class="note">Ranked fixes sit next to the routes each one removes.</p></div>
+      <div><svg class="ic" style="width:24px;height:24px;color:var(--red);display:block;margin-bottom:10px"><use href="#i-key"/></svg><h3>The tenant decides what matters</h3><p class="note">An analyst marks a crown jewel, and every route and finding is recomputed for that tenant.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 17 -->
+<section class="slide">
+  <div class="top"><span>04 · The product</span><span>17</span></div>
+  <h2>Who may see which system</h2>
+  <p class="lead">The map of how to reach regulated data is itself a target. Seeing the name at the end of a route is a permission of its own, <code>crown:reveal</code>.</p>
+  <div class="blocks c2" style="margin-top:34px">
+    <div class="block" style="padding-right:36px">
+      <div class="cap" style="margin-bottom:20px">Analyst</div>
+      <div class="chain">
+        <span class="node out" style="font-size:13px">192.0.2.41</span><span class="hop" style="min-width:50px"></span>
+        <span class="node" style="font-size:13px">svc-deploy</span><span class="hop" style="min-width:50px"></span>
+        <span class="node crown" style="font-size:13px">s3://nightly-backups</span>
+      </div>
+    </div>
+    <div class="block" style="padding-left:36px">
+      <div class="cap" style="margin-bottom:20px">Auditor</div>
+      <div class="chain">
+        <span class="node out" style="font-size:13px">192.0.2.41</span><span class="hop" style="min-width:50px"></span>
+        <span class="node" style="font-size:13px">svc-deploy</span><span class="hop" style="min-width:50px"></span>
+        <span class="node crown" style="font-size:13px">crown-jewel-f26c32a1</span>
+      </div>
+    </div>
+  </div>
+  <p class="note" style="margin-top:30px">Same routes, same counts, same tactics. The pseudonym is stable for the tenant, so a trend can still be followed.</p>
+  <div class="strip bottom">
+    <div><b>7</b><span>roles, deny by default</span></div>
+    <div><b>22</b><span>permissions</span></div>
+    <div><b>32</b><span>API operations, each one guarded</span></div>
+    <div><b>4</b><span>export formats, STIX, SARIF, OSCAL, CSV</span></div>
+    <div><b>1</b><span>hash-chained audit log</span></div>
+  </div>
+</section>
+
+<!-- 18 divider 05 -->
+<section class="slide divider">
+  <div class="big">05</div>
+  <h1>Evidence</h1>
+  <p class="sub">A second engine, a benchmark, the tests and what is not real.</p>
+  <div class="foot"><div class="dots"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></div><span class="capg">Section 05 of 05</span></div>
+</section>
+
+<!-- 19 -->
+<section class="slide">
+  <div class="top"><span>05 · Evidence</span><span>19</span></div>
+  <h2>Two engines, one answer</h2>
+  <p class="lead">The same graph is loaded into Neo4j Community and asked the same questions in plain Cypher, with no GDS and no APOC.</p>
+  <table style="margin-top:26px">
+    <tr><th>Question</th><th class="r" style="width:18%">Engine</th><th class="r" style="width:18%">Cypher</th><th class="r" style="width:14%"></th></tr>
+    <tr><td>Routes to a crown jewel</td><td class="r">12</td><td class="r">12</td><td class="r red m">agrees</td></tr>
+    <tr><td>Cheapest route</td><td class="r">2.0</td><td class="r">2.0</td><td class="r red m">agrees</td></tr>
+    <tr><td>Routes through <code>/api/orders</code></td><td class="r">5</td><td class="r">5</td><td class="r red m">agrees</td></tr>
+    <tr><td>Containment, five cuts</td><td class="r">5</td><td class="r">5</td><td class="r red m">agrees</td></tr>
+    <tr><td>Blast radius at one, two, three hops</td><td class="r">2, 6, 8</td><td class="r">2, 6, 8</td><td class="r red m">agrees</td></tr>
+  </table>
+  <p class="note bottom">On its first run Cypher found 13 routes. Two nodes were joined by both a grant and an observed use, and Cypher walked each one. That is one route through the estate, and the Cypher was corrected.</p>
+</section>
+
+<!-- 20 -->
+<section class="slide">
+  <div class="top"><span>05 · Evidence</span><span>20</span></div>
+  <h2>At scale, and under test</h2>
+  <div class="nums c4">
+    <div class="num"><b>72,967</b><span>nodes in the large benchmark estate</span></div>
+    <div class="num"><b>2.06s</b><span>to rank every cut on it</span></div>
+    <div class="num"><b>358</b><span>tests</span></div>
+    <div class="num"><b>84%</b><span>statement coverage</span></div>
+  </div>
+  <table style="margin-top:44px">
+    <tr><th>Estate</th><th class="r">Exposure</th><th class="r">Blast radius</th><th class="r">PageRank</th><th class="r">Louvain</th><th class="r">Containment</th></tr>
+    <tr><td>Layered, 72,967 nodes, 130,515 edges</td><td class="r">0.30s, capped</td><td class="r">0.13s</td><td class="r">1.33s</td><td class="r">1.74s</td><td class="r">2.06s</td></tr>
+    <tr><td>Dense mesh, 3,001 nodes, 17,955 edges</td><td class="r">0.64s</td><td class="r">0.01s</td><td class="r">0.71s</td><td class="r">0.10s</td><td class="r">4.61s</td></tr>
+  </table>
+  <p class="note bottom">From <code>python3 -m graphops.bench</code>, a fixed seed, one laptop, 581 MB peak. Cost follows how dense the perimeter is and how deep the search goes more than how many nodes there are. The first run found containment taking 29.6s on the large estate, and that was fixed before any number here was taken.</p>
+</section>
+
+<!-- 21 -->
+<section class="slide">
+  <div class="top"><span>05 · Evidence</span><span>21</span></div>
+  <h2>What is real, and what is not</h2>
+  <div class="blocks c2" style="margin-top:34px">
+    <div class="block" style="padding-right:36px">
+      <div class="cap" style="margin-bottom:16px">Real</div>
+      <table>
+        <tr><td style="width:30px;padding-right:8px"><svg class="ic" style="width:20px;height:20px;color:var(--red)"><use href="#i-check"/></svg></td><td>Every number in this deck is printed by the code.</td></tr>
+        <tr><td><svg class="ic" style="width:20px;height:20px;color:var(--red)"><use href="#i-check"/></svg></td><td>The engine, the connectors and the command line run on Python with nothing installed.</td></tr>
+        <tr><td><svg class="ic" style="width:20px;height:20px;color:var(--red)"><use href="#i-check"/></svg></td><td>Eight live connector paths run over HTTP in the tests, and CloudTrail from log files. Each must build the replay graph exactly.</td></tr>
+        <tr><td><svg class="ic" style="width:20px;height:20px;color:var(--red)"><use href="#i-check"/></svg></td><td>Both engines run and are compared on every demo.</td></tr>
+      </table>
+    </div>
+    <div class="block" style="padding-left:36px">
+      <div class="capg" style="margin-bottom:16px">Not real</div>
+      <table>
+        <tr><td style="width:30px;padding-right:8px"><svg class="ic" style="width:20px;height:20px;color:var(--faint)"><use href="#i-x"/></svg></td><td>The business is invented, and the addresses route nowhere.</td></tr>
+        <tr><td><svg class="ic" style="width:20px;height:20px;color:var(--faint)"><use href="#i-x"/></svg></td><td>The recordings are written from each vendor's documentation. No real tenant has answered them yet.</td></tr>
+        <tr><td><svg class="ic" style="width:20px;height:20px;color:var(--faint)"><use href="#i-x"/></svg></td><td>Until 5 November the live paths had never run, and most were wrong. CrowdStrike still called an API retired in September 2025.</td></tr>
+        <tr><td><svg class="ic" style="width:20px;height:20px;color:var(--faint)"><use href="#i-x"/></svg></td><td>Louvain here is the local-moving phase only, and the code says so.</td></tr>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- 22 closing -->
+<section class="slide closing">
+  <div class="top" style="color:#fff;opacity:.85"><span>GraphOps</span><span>22</span></div>
+  <h1>What comes next</h1>
+  <div class="blocks c4" style="margin-top:56px">
+    <div class="block"><svg class="ic"><use href="#i-plus"/></svg><h3>A real tenant</h3><p>The live paths, run against a customer's own accounts.</p></div>
+    <div class="block"><svg class="ic"><use href="#i-cut"/></svg><h3>Acting on a cut</h3><p>Containment is ranked today. A revocation should go through the Jira issue a finding opens.</p></div>
+    <div class="block"><svg class="ic"><use href="#i-stream"/></svg><h3>Streaming</h3><p>The estate is rebuilt in batches. From a queue, blast radius is live.</p></div>
+    <div class="block"><svg class="ic"><use href="#i-graph"/></svg><h3>More sources</h3><p>Internal address ranges and an endpoint agent see past what logs show.</p></div>
+  </div>
+  <div class="bottom cap" style="color:#fff">GraphOps &nbsp;·&nbsp; hackFront India 2026</div>
+</section>
+
+</body>
+</html>
