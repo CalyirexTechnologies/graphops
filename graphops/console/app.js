@@ -10,6 +10,7 @@
 
   var SCREENS = [
     { id: 'overview', label: 'Overview', icon: 'overview', perm: 'graph:read' },
+    { id: 'graph', label: 'Graph', icon: 'graph', perm: 'graph:query' },
     { id: 'exposure', label: 'Exposure', icon: 'exposure', perm: 'graph:query' },
     { id: 'findings', label: 'Findings', icon: 'findings', perm: 'finding:read' },
     { id: 'access', label: 'Access', icon: 'access', perm: 'graph:query' },

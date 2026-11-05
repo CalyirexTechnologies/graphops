@@ -212,6 +212,7 @@
   /* -------------------------------------------------------------- icons */
   var ICONS = {
     overview: [['rect', { x: 3, y: 3, width: 7, height: 7, rx: 1.5 }], ['rect', { x: 14, y: 3, width: 7, height: 7, rx: 1.5 }], ['rect', { x: 3, y: 14, width: 7, height: 7, rx: 1.5 }], ['rect', { x: 14, y: 14, width: 7, height: 7, rx: 1.5 }]],
+    graph: [['circle', { cx: 5, cy: 12, r: 2.5 }], ['circle', { cx: 19, cy: 5, r: 2.5 }], ['circle', { cx: 19, cy: 19, r: 2.5 }], ['path', { d: 'M7.4 10.8l9.2-4.6M7.4 13.2l9.2 4.6M19 7.5v9' }]],
     exposure: [['circle', { cx: 6, cy: 19, r: 2.5 }], ['circle', { cx: 18, cy: 5, r: 2.5 }], ['path', { d: 'M8.5 19H15a3.5 3.5 0 0 0 0-7H9a3.5 3.5 0 0 1 0-7h6.5' }]],
     findings: [['path', { d: 'M12 3l9.5 17h-19L12 3z' }], ['path', { d: 'M12 10v4M12 17.5v.01' }]],
     access: [['circle', { cx: 8, cy: 15, r: 4 }], ['path', { d: 'M10.8 12.2L20 3M16 7l3 3M14 9l2 2' }]],

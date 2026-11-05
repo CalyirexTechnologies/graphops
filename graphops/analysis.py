@@ -954,3 +954,100 @@ def overview(estate):
                    'new_reach': recent['new_reach'][:5],
                    'incidents': recent['incidents'][:5]},
     }
+
+
+#: Systems the map draws before it keeps a subset. Four hundred boxes in
+#: four columns is already a long scroll, and the browser draws every one.
+MAP_NODE_LIMIT = 400
+#: Relationships among the kept systems are capped too, because a dense
+#: estate has many more of them than systems. Over either cap the map says so.
+MAP_EDGE_LIMIT = 6000
+_ZONE_RANK = {Zone.UNTRUSTED: 0, Zone.PERIMETER: 1, Zone.INTERNAL: 2, Zone.CROWN: 3}
+
+
+def estate_map(estate, limit=MAP_NODE_LIMIT, window_hours=24, now=None,
+               edge_limit=MAP_EDGE_LIMIT):
+    """Every system and every relationship, ready to draw.
+
+    Every other answer picks out part of the graph. This one is the graph,
+    so a screen can show the whole estate and light any answer up on it.
+
+    EDGES NAME THEIR ENDS BY POSITION IN `nodes`, NOT BY ID. A crown jewel's
+    node record is masked for a role without crown:reveal, and an id repeated
+    in every edge would be a second copy of the name for the masking to miss.
+    A position carries no name at all.
+
+    `is_new` is novel_activity's own rule: a first sighting inside the
+    window, measured from the estate's "now". An edge whose first sighting
+    is unknown has always been there, so it is not new.
+
+    OVER THE LIMIT IT KEEPS A SUBSET, AND SAYS WHICH. Every crown jewel,
+    then every system on an enumerated route, then the most connected, with
+    ties broken by id so that two requests draw the same map. The totals are
+    always over the whole estate. A silent cut would draw a picture that
+    looks complete and is not.
+    """
+    limit = max(1, int(limit))
+    edge_limit = max(0, int(edge_limit))
+    loaded = estate.loaded()
+    meta = loaded.meta
+    attached = [e for e in estate.edges if e['src'] in meta and e['dst'] in meta]
+
+    degree = dict.fromkeys(meta, 0)
+    for e in attached:
+        degree[e['src']] += 1
+        degree[e['dst']] += 1
+    on_route = set()
+    for found in routes(estate):
+        on_route.update(found['path'])
+
+    ranked = sorted(meta, key=lambda i: (not meta[i].get('crown'), i not in on_route,
+                                         -degree[i], i))
+    kept = ranked[:limit]
+    ordered = sorted(kept, key=lambda i: (_ZONE_RANK.get(meta[i].get('zone'), 2),
+                                          meta[i].get('kind', ''),
+                                          meta[i].get('key', ''), i))
+    position = {node_id: n for n, node_id in enumerate(ordered)}
+
+    nodes = []
+    for node_id in ordered:
+        described = loaded.describe(node_id)
+        described['degree'] = degree[node_id]
+        described['on_route'] = node_id in on_route
+        nodes.append(described)
+
+    cutoff = estate.now(now) - timedelta(hours=window_hours)
+    among = [e for e in attached if e['src'] in position and e['dst'] in position]
+    # Relationships on routes first, so a capped dense estate still draws
+    # every route it found.
+    among.sort(key=lambda e: (not (e['src'] in on_route and e['dst'] in on_route),
+                              position[e['src']], position[e['dst']], e['kind']))
+    edges = []
+    for e in among[:edge_limit]:
+        _tactic_id, tactic, technique = EdgeKind.ATTACK.get(e['kind'], ('', '', ''))
+        first = e.get('first_seen')
+        edges.append({'s': position[e['src']], 't': position[e['dst']],
+                      'kind': e['kind'], 'tactic': tactic, 'technique': technique,
+                      'cost': float(e.get('cost', 1.0)),
+                      'first_seen': str(first) if first else None,
+                      'is_new': bool(first) and _when(first) >= cutoff,
+                      'sources': list(e.get('sources') or ())})
+
+    nodes_cut = len(nodes) < len(meta)
+    edges_cut = len(edges) < len(attached)
+    return {
+        'as_of': estate.now(now).isoformat(),
+        'window_hours': window_hours,
+        'zones': [Zone.UNTRUSTED, Zone.PERIMETER, Zone.INTERNAL, Zone.CROWN],
+        'nodes': nodes,
+        'edges': edges,
+        'total_nodes': len(meta),
+        'total_edges': len(attached),
+        'shown_nodes': len(nodes),
+        'shown_edges': len(edges),
+        'truncated': nodes_cut or edges_cut,
+        'limit': limit,
+        'edge_limit': edge_limit,
+        'kept_by': ('every crown jewel, then every system on a route, then the '
+                    'most connected' if nodes_cut else None),
+    }

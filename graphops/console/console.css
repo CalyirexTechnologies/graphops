@@ -339,6 +339,12 @@ body { margin: 0; }
 /* ------------------------------------------------------------- exposure */
 .route-map { overflow-x: auto; }
 .route-map svg { display: block; margin: 0 auto; max-width: none; height: auto; }
+/* The Graph screen. The whole estate scrolls inside its panel at any width,
+   so the page itself never scrolls sideways. */
+.graph-map { overflow: auto; max-height: 78vh; padding: 4px 0; }
+.graph-map svg { display: block; margin: 0 auto; max-width: none; height: auto; }
+.graph-map a:focus-visible rect { stroke: var(--accent); stroke-width: 2.5px; }
+.lens-body { padding: 14px 18px 18px; display: flex; flex-direction: column; gap: 6px; }
 .blast-rings svg { display: block; width: 100%; max-width: 280px; height: auto; margin: 0 auto; }
 .hop-col { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; min-width: 0; }
 .hop-col .head { display: flex; justify-content: space-between; padding: 8px 12px; background: var(--panel-2); border-bottom: 1px solid var(--line); }

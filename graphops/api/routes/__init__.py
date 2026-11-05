@@ -331,6 +331,25 @@ def register_routes(app, *, identity, audit, current_principal, requires,
                     grants=rows[offset:offset + limit])
         return respond(body, principal)
 
+    @graph.get('/map', summary='Every system and relationship, ready to draw')
+    def graph_map(principal: Principal = Depends(requires(Permission.GRAPH_QUERY)),
+                  limit: int = Query(default=400, ge=1, le=2000),
+                  window_hours: int = Query(default=24, ge=1, le=720)):
+        # Through respond() like every graph answer, so a role without
+        # crown:reveal gets the same pseudonyms here as in a route, and the
+        # map lines up with anything drawn on it. Audited like exposure,
+        # because the whole map is the most a single answer gives away.
+        from ... import analysis
+        result = analysis.estate_map(current_estate(principal), limit=limit,
+                                     window_hours=window_hours)
+        audit.record(action='graph.map', outcome=Outcome.SUCCESS,
+                     organization_id=principal.organization,
+                     actor_id=principal.subject,
+                     on_behalf_of=principal.impersonated_by,
+                     detail={'nodes': result['shown_nodes'],
+                             'truncated': result['truncated']})
+        return respond(result, principal)
+
     @graph.get('/nodes', summary='Find entities by name')
     def search_nodes(principal: Principal = Depends(requires(Permission.GRAPH_QUERY)),
                      q: str | None = Query(default=None, max_length=200),
