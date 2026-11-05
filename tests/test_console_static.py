@@ -60,10 +60,13 @@ def test_no_console_script_builds_markup_from_a_string():
 
 def test_the_console_names_the_product_not_the_company_or_a_customer():
     """The submission was scanned clean of company and tenant names, and the
-    design export carried both. The console uses neither."""
+    design export carried both. The console uses neither, and names no
+    person: a style comment once credited a rule to a team member by name,
+    and shipped in a public commit before a scan of the zip caught it."""
     # Written reversed so the repository's own scan for those names, which
     # the submission notes quote as clean, does not find them in this test.
-    banned = [word[::-1] for word in ('xeriylac', 'arovlah')]
+    banned = [word[::-1] for word in ('xeriylac', 'arovlah',
+                                      'anhsirkirhs', 'akihtsaws')]
     for path in list(CONSOLE.glob('*.js')) + list(CONSOLE.glob('*.html')) + list(CONSOLE.glob('*.css')):
         text = path.read_text(encoding='utf-8').lower()
         for name in banned:

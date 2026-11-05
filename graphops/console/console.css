@@ -277,9 +277,9 @@ body { margin: 0; }
 .tbl .tr:last-child { border-bottom: 0; }
 .tbl a.tr:hover, .tbl button.tr:hover { background: var(--panel-2); text-decoration: none; }
 .tbl button.tr { width: 100%; border: 0; background: transparent; text-align: left; border-bottom: 1px solid var(--line); }
-/* The design marks a selected row with a left accent rail. That rail is a
-   standing no from Shrikrishna (twice, 15 Sep 2026), so selection is the
-   tint alone, which carries the same state without the bar. */
+/* The design marks a selected row with a left accent rail. This product
+   uses no left accent rails anywhere, so selection is the tint alone,
+   which carries the same state without the bar. */
 .tbl .tr.on { background: color-mix(in srgb, var(--accent) 9%, var(--panel)); }
 .tbl .num { text-align: right; }
 .sub { display: block; font-size: 12px; line-height: 17px; color: var(--text-3); }
