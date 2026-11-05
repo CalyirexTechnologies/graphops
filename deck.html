@@ -322,10 +322,11 @@ Both engines agree on every answer.</pre>
   <h2>Nine sources, one estate, and the join that nearly broke it</h2>
   <div class="body">
     <p class="lede" style="margin-bottom:4mm">Thirteen integrations across
-    nine categories. Each ships a committed fixture, so the whole pipeline
-    runs with no vendor account, no API key and no network. Live mode issues
-    the real call and refuses to start without credentials rather than
-    falling back to the fixture.</p>
+    nine categories. Each inbound connector has one code path and two
+    transports. Replay answers its requests from a recording of the vendor's
+    documented API, so the pipeline runs with no account, no key and no
+    network. Live sends the same requests over HTTP and refuses to start
+    without credentials.</p>
     <pre>splunk     sentinel    crowdstrike   okta      entra
 cloudtrail qualys      tenable       servicenow          inbound
 jira       slack       teams         pagerduty           outbound
@@ -352,6 +353,86 @@ Cheapest route to regulated data, effort 2.0
   <div class="foot"><span>GraphOps</span><span>10</span></div>
 </section>
 
+<!-- 11 -->
+<section class="slide">
+  <div class="kicker">Containment</div>
+  <h2>What to cut first, measured by making the cut</h2>
+  <div class="body cols">
+    <div>
+      <p class="lede" style="margin-bottom:4mm">The exposure query puts
+      <code>/api/orders</code> on 5 of the 12 routes. That count cannot say
+      whether taking it down protects anything. So the engine makes each cut,
+      runs the search again and records what changed.</p>
+      <pre>cut              routes removed   out of reach after
+svc-deploy       1 of 12          s3://nightly-backups
+/api/orders      5 of 12          nothing
+/admin           3 of 12          nothing
+support-desk     2 of 12          nothing</pre>
+      <p style="margin-top:4mm">The busiest choke point protects nothing.
+      The cut that puts the backups out of reach sits on one route. The first
+      version of this ranking sorted by routes removed and recommended
+      <code>/api/orders</code>. Crown jewels now rank first.</p>
+      <p>A grant nobody has used goes on the same list as a system taken
+      down, since revoking it costs no downtime. On the connector estate,
+      revoking <code>support-desk</code>'s unused access to
+      <code>billing-database</code> ranks third.</p>
+    </div>
+    <div>
+      <h3>At scale</h3>
+      <pre>layered estate, 72,967 nodes, 130,515 edges
+  load          0.27s     blast radius   0.13s
+  exposure      0.30s     PageRank       1.33s
+  containment   2.06s     Louvain        1.74s
+peak memory across the whole sweep: 581 MB
+
+mesh estate, 3,001 nodes, 17,955 edges
+  exposure      0.64s     containment    4.61s</pre>
+      <p style="margin-top:4mm">Printed by <code>python3 -m graphops.bench</code>
+      from a fixed seed, on one laptop. Exposure at the large size stops at
+      its route cap, and the output says so on that line.</p>
+      <p>Cost follows perimeter density and search depth more than node
+      count, which is why the small dense mesh is the slow one. The first run
+      of the benchmark found containment taking 29.6s on the large estate,
+      paying a full search for every dormant grant. A free pre-filter and a
+      budget on searches brought it to the 2.06s above.</p>
+    </div>
+  </div>
+  <div class="foot"><span>GraphOps</span><span>11</span></div>
+</section>
+
+<!-- 12 -->
+<section class="slide">
+  <div class="kicker">The console</div>
+  <h2>The same answers, for the person who has to act on them</h2>
+  <div class="body cols wide">
+    <div>
+      <p class="lede" style="margin-bottom:4mm">Routes, cuts, findings and
+      counts come from the API, which runs the same engine the CLI prints
+      from. The browser only formats them.</p>
+      <ul>
+        <li><strong>Overview, Exposure, Findings, Access, Compliance,
+        Connectors, Admin.</strong> Each screen answers one question. The
+        ranked fixes sit next to the routes they remove.</li>
+        <li><strong>An analyst marks a crown jewel</strong> and every route,
+        finding and fix is recomputed for that tenant only.</li>
+        <li><strong>Walked as all six roles, light and dark</strong>, in a
+        headless browser. Zero console errors, zero failed requests, and no
+        crown jewel name in the page of a role that may not see one.</li>
+        <li><strong>No build step.</strong> Preact vendored, a strict content
+        security policy with no inline script and no eval, and a test that
+        fails if either comes back.</li>
+      </ul>
+    </div>
+    <figure>
+      <img src="shots/console-exposure.png" alt="The exposure screen: route map, routes and ranked fixes">
+      <figcaption>Signed in as an analyst on the connector estate. The label
+      under the heading names the ingest this estate was built from.</figcaption>
+    </figure>
+  </div>
+  <div class="foot"><span>GraphOps</span><span>12</span></div>
+</section>
+
+<!-- 13 -->
 <section class="slide">
   <h2>Who may see which system is its own question</h2>
   <div class="body cols">
@@ -386,12 +467,12 @@ auditor  2.0  192.0.2.41 -> svc-deploy
     <div>
       <h3>The rest of the platform</h3>
       <ul>
-        <li><strong>7 roles, 21 permissions</strong>, deny by default, held
+        <li><strong>7 roles, 22 permissions</strong>, deny by default, held
         as data so the tests assert properties over the whole matrix rather
         than spot-checking roles.</li>
         <li><strong>Append-only hash-chained audit.</strong> Editing or
         deleting an entry is detected and the first damaged row is named.</li>
-        <li><strong>24 API operations</strong> with OpenAPI. Authentication is
+        <li><strong>32 API operations</strong> with OpenAPI. Authentication is
         a dependency, not middleware, and a test walks the route table so a
         route added next month is covered the day it is written.</li>
         <li><strong>STIX, SARIF, OSCAL, CSV</strong>, each chosen because
@@ -401,14 +482,15 @@ auditor  2.0  192.0.2.41 -> svc-deploy
         not-assessed: the graph can prove a control is contradicted, not that
         one operates.</li>
       </ul>
-      <p style="margin-top:4mm"><strong>153 tests, 76% coverage.</strong> The
+      <p style="margin-top:4mm"><strong>358 tests, 84% coverage.</strong> The
       security ones are named after the attack they prevent, so a regression
       reads as "alg none accepted" rather than "assertion failed".</p>
     </div>
   </div>
-  <div class="foot"><span>GraphOps</span><span>11</span></div>
+  <div class="foot"><span>GraphOps</span><span>13</span></div>
 </section>
 
+<!-- 14 -->
 <section class="slide">
   <h2>What is real here</h2>
   <div class="body cols">
@@ -420,15 +502,21 @@ auditor  2.0  192.0.2.41 -> svc-deploy
         nothing installed. A CI job proves it by importing them on a clean
         interpreter and failing if anything third-party was pulled in.</li>
         <li>Both engines run on every demo and are compared.</li>
-        <li>The API, the roles, the redaction and the audit chain are working
-        code with 151 tests against them, not slideware.</li>
+        <li>Every live connector path runs over real HTTP in the tests, against
+        a local server answering the documented API, and has to build exactly
+        the graph replay builds.</li>
+        <li>The API, the console, the roles, the redaction and the audit chain
+        are working code, with 358 tests across the product.</li>
       </ul>
       <h3 style="margin-top:5mm">Not real, said plainly</h3>
       <ul>
         <li>The business is invented and the addresses route nowhere.</li>
-        <li>The connector fixtures are synthetic records in each vendor's
-        published response shape, not captures from anyone's tenant. The live
-        API paths are written but have never run against a real account.</li>
+        <li>The recordings are synthetic, written from each vendor's
+        documentation, not captured from anyone's tenant. Until 5 November
+        the live paths had never run, and checked against the documentation
+        most were wrong: CrowdStrike still called the Detects API, retired in
+        September 2025. They are rewritten and tested now, and no real tenant
+        has answered them yet.</li>
         <li>The estate is hand-authored, so the numbers here are the numbers
         you get when you run it.</li>
         <li>Louvain here is the local-moving phase, not the full algorithm
@@ -438,23 +526,26 @@ auditor  2.0  192.0.2.41 -> svc-deploy
     <div>
       <h3>Next</h3>
       <ul>
-        <li><strong>Somebody has to name the crown jewels.</strong> The graph
-        says what connects to what. Which systems matter is a business
-        judgement, and inferring it from centrality returns the busiest node,
-        which is usually a health check.</li>
+        <li><strong>A real tenant.</strong> The live paths match each vendor's
+        documentation. Only a customer's own account proves the vendor
+        answers the same way.</li>
+        <li><strong>Acting on a cut.</strong> Containment is simulated and
+        ranked. The product revokes nothing itself yet. A revocation should
+        go through the Jira issue a finding already opens.</li>
         <li><strong>Streaming.</strong> The estate is rebuilt in a batch
         today. The same projection from a queue makes blast radius live
         rather than near-live.</li>
-        <li><strong>Containment.</strong> Blast radius already names what to
-        isolate first, which is the shortest distance between a detection and
-        a contained incident.</li>
         <li><strong>More sources.</strong> Nine are connected. Internal
         address ranges and an endpoint agent widen the graph well past what
         logs alone can see.</li>
       </ul>
+      <p style="margin-top:4mm">Crown jewels stay a person's call. Sources
+      suggest them, an analyst confirms or overrides each one in the console,
+      and the product never infers them from centrality, which ranks the
+      busiest node, usually a health check.</p>
     </div>
   </div>
-  <div class="foot"><span>hackFront India, Cybersecurity, Neo4j Track</span><span>12</span></div>
+  <div class="foot"><span>hackFront India, Cybersecurity, Neo4j Track</span><span>14</span></div>
 </section>
 
 </body>

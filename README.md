@@ -40,7 +40,7 @@ make install                      # venv + fastapi + neo4j driver + pytest
 export GRAPHOPS_SIGNING_KEY=$(python3 -m graphops.cli keygen)
 .venv/bin/python -m graphops.cli bootstrap --slug acme --email you@acme.example
 make serve                        # console at http://127.0.0.1:8000/
-make test                         # 338 tests
+make test                         # 358 tests
 ```
 
 `bootstrap` prints a generated owner password once. Sign in to the console
@@ -206,7 +206,7 @@ fed a node.
 |---|---|
 | **Multi-tenancy** | Every query scoped to the principal's organization, never to a caller-supplied parameter. Another tenant's object answers 404, not 403. |
 | **Authentication** | Password (scrypt) plus optional TOTP, account lockout, HS256 tokens, refresh rotation with reuse detection, API keys stored as hashes. |
-| **Authorisation** | 7 roles, 21 permissions, a deny-by-default matrix held as data so the tests can assert properties over all of it. |
+| **Authorisation** | 7 roles, 22 permissions, a deny-by-default matrix held as data so the tests can assert properties over all of it. |
 | **Graph-aware redaction** | `crown:reveal` is its own permission. Without it a crown jewel reads as `crown-jewel-7f3a`: stable per tenant, HMAC-derived, counts preserved. |
 | **Audit** | Append-only and hash-chained. Editing or deleting an entry is detected and the first damaged row is named. Secrets scrubbed before the write. |
 | **REST API** | 32 operations, OpenAPI at `/openapi.json`, Swagger at `/docs`. |
@@ -289,7 +289,7 @@ endpoints, so a route added next month is covered the day it is written.
 Enumerating endpoints by hand is how an unauthenticated route reaches
 production with a green suite.
 
-**143 tests, 76% statement coverage.**
+**358 tests, 84% statement coverage.**
 
 ---
 
@@ -376,28 +376,33 @@ graphops/
   vocab.py            node and edge kinds, ATT&CK mapping, zones, costs
   algorithms.py       bounded BFS, Dijkstra, path enumeration, choke points,
                       PageRank, Louvain local moving, connected components
-  analysis.py         the seven questions
+  analysis.py         the seven questions, and containment
+  bench.py            the scale benchmark, from a fixed seed
   estate.py           the hand-authored synthetic business
   findings.py         answers -> findings, with stable fingerprints
   neo4j_store.py      the same graph in Neo4j, queried in Cypher
-  cli.py              keygen, bootstrap, ingest, analyse, export, serve
+  cli.py              keygen, bootstrap, ingest, analyse, containment,
+                      export, verify-audit, serve, demo
   config.py           environment only, and no secret has a default
   connectors/         13 integrations, the registry, entity resolution,
                       and the fixture generator
   identity/           scrypt, JWT, TOTP, sign-in, API keys, impersonation
   rbac/               permissions, roles, principals, crown-jewel redaction
   audit/              the hash-chained append-only log
-  api/                FastAPI app, routes, schemas, rate limiting
+  api/                FastAPI app, routes, schemas, rate limiting, and the
+                      state each tenant is served
+  console/            the exposure console, Preact vendored, no build step
   exporters/          STIX, SARIF, OSCAL, CSV
   compliance/         SOC 2, ISO 27001, CIS controls and assessment
   observability/      Prometheus metrics
   store/              SQLite with forward-only migrations
-cypher/               the five queries as standalone files
-tests/                143 tests
+cypher/               the six queries as standalone files
+tests/                358 tests
 viewer/index.html     the picture, no build step and no dependencies
 ```
 
-52 Python files, about 7,100 lines, plus 1,270 lines of tests.
+53 Python files, about 10,100 lines, plus 3,800 lines of tests and 2,350
+lines of console JavaScript, CSS and HTML.
 
 ---
 
