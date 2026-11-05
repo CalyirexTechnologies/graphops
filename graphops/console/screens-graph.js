@@ -10,7 +10,9 @@
   GX.head = head;
 
   function asOf(ov) {
-    var ing = ov && ov.last_ingest;
+    // The ingest the estate came from, which a failed run or a restart can
+    // make different from the last one run.
+    var ing = ov && ov.served_ingest;
     var parts = [];
     if (ing) parts.push('built from ingest ' + GX.short(ing.id) + ' at ' + GX.time(ing.finished_at) + ' ' + GX.zone);
     if (ov && ov.mode === 'replay') parts.push('replay recorded ' + GX.day(ov.as_of) + ' ' + GX.time(ov.as_of));

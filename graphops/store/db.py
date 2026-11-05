@@ -21,7 +21,7 @@ from pathlib import Path
 
 #: Bumped whenever MIGRATIONS grows. Asserted in the test suite so a
 #: migration added without a version bump fails CI rather than production.
-SCHEMA_VERSION = 5
+SCHEMA_VERSION = 6
 
 MIGRATIONS: list[tuple[int, str]] = [
     (1, """
@@ -236,6 +236,21 @@ MIGRATIONS: list[tuple[int, str]] = [
     -- When a finding stopped being true. A fix that worked is a finding that
     -- resolves on the next ingest, and saying so closes the loop.
     ALTER TABLE findings ADD COLUMN resolved_at INTEGER;
+    """),
+
+    (6, """
+    -- The estate each tenant is served, and the ingest it was built from.
+    -- Held only in memory before this, so a restart handed every tenant the
+    -- server's startup estate while the console still labelled it with the
+    -- tenant's own last ingest: a live ingest could come back as replay data
+    -- under the live run's name. One row per tenant, the estate currently
+    -- served; the ingests table keeps the history.
+    CREATE TABLE served_estates (
+        organization_id     TEXT PRIMARY KEY REFERENCES organizations(id),
+        ingest_id           TEXT NOT NULL,
+        payload             TEXT NOT NULL,
+        stored_at           INTEGER NOT NULL
+    );
     """),
 ]
 

@@ -439,8 +439,10 @@ def register_routes(app, *, identity, audit, current_principal, requires,
 
         if principal.can(Permission.CONNECTOR_READ):
             summary['last_ingest'] = estates.latest_ingest(principal.organization)
+            summary['served_ingest'] = estates.served_ingest(principal.organization)
         else:
             withheld['last_ingest'] = Permission.CONNECTOR_READ.value
+            withheld['served_ingest'] = Permission.CONNECTOR_READ.value
 
         summary['sections_withheld'] = withheld
         return respond(summary, principal)
@@ -489,7 +491,7 @@ def register_routes(app, *, identity, audit, current_principal, requires,
         # tenant keeps the estate it had, rather than being handed an empty
         # one that would answer "no routes found".
         if result.status != 'failed' and resolved.get('nodes'):
-            estates.replace(principal.organization, resolved)
+            estates.replace(principal.organization, resolved, result.ingest_id)
         record = estates.record_ingest(principal.organization, principal.subject,
                                        result, resolved, started, finished)
         audit.record(action='ingest.complete', outcome=(

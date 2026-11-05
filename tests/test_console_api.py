@@ -201,6 +201,67 @@ def test_one_tenants_ingest_does_not_change_another_tenants_estate(
     assert theirs['estate']['entities'] == 35
 
 
+def test_a_restart_serves_the_tenant_its_own_estate_and_names_its_ingest(
+        settings, db, connector_estate, client, auth_header):
+    """The bug: a tenant's estate lived only in memory. After a restart the
+    tenant was served the server's startup estate, and the console labelled
+    it with the tenant's own last ingest, so a live run would come back as
+    replay data under the live run's name."""
+    from fastapi.testclient import TestClient
+
+    from graphops.api.app import create_app
+    run = client.post('/v1/connectors/run', headers=auth_header('owner'),
+                      json={'mode': 'replay', 'connectors': ['okta', 'servicenow']}).json()
+    before = client.get('/v1/overview', headers=auth_header('analyst')).json()
+    assert before['estate']['entities'] != 35, 'the subset must differ from startup'
+
+    restarted = TestClient(create_app(settings=settings, db=db,
+                                      estate_provider=lambda: connector_estate))
+    token = _login(restarted, 'analyst').json()['access_token']
+    after = restarted.get('/v1/overview',
+                          headers={'Authorization': 'Bearer %s' % token}).json()
+    assert after['estate'] == before['estate']
+    assert after['exposure']['path_count'] == before['exposure']['path_count']
+    assert after['served_ingest']['id'] == run['ingest_id']
+
+
+def test_a_failed_run_is_the_last_ingest_but_not_the_one_served(client, auth_header):
+    good = client.post('/v1/connectors/run', headers=auth_header('owner'),
+                       json={'mode': 'replay', 'connectors': ['okta']}).json()
+    bad = client.post('/v1/connectors/run', headers=auth_header('owner'),
+                      json={'mode': 'replay', 'connectors': ['jira']})
+    assert bad.status_code == 200, bad.text
+    assert bad.json()['served'] is False
+    body = client.get('/v1/overview', headers=auth_header('analyst')).json()
+    assert body['last_ingest']['id'] == bad.json()['ingest_id']
+    assert body['last_ingest']['status'] == 'failed'
+    assert body['served_ingest']['id'] == good['ingest_id']
+
+
+def test_a_tenant_that_never_ran_an_ingest_is_served_the_startup_one(
+        client, auth_header):
+    body = client.get('/v1/overview', headers=auth_header('analyst')).json()
+    # No startup ingest is recorded in the test app, so there is nothing to
+    # name, and the overview must say nothing rather than borrow a label.
+    assert body['served_ingest'] is None
+    assert body['estate']['entities'] == 35
+
+
+def test_the_schema_version_is_the_last_migration_and_a_fresh_store_reaches_it():
+    """A migration added without bumping SCHEMA_VERSION fails here, not in
+    production. The version's own comment said a test asserted this, and
+    until this one none did."""
+    from graphops.store.db import MIGRATIONS, SCHEMA_VERSION, Database
+    versions = [version for version, _ in MIGRATIONS]
+    assert versions == sorted(set(versions))
+    assert versions[-1] == SCHEMA_VERSION
+    store = Database(':memory:')
+    try:
+        assert store.migrate() == SCHEMA_VERSION
+    finally:
+        store.close()
+
+
 # ---------------------------------------------------------------- findings
 
 def test_a_finding_remembers_when_it_was_first_seen(client, auth_header):

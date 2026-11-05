@@ -6,7 +6,9 @@ Three things the console design relies on, which the API used to forget:
     ingested, resolved, audited and then threw its own result away. Now an
     ingest replaces the estate its tenant is served, and only its tenant's:
     replacing one shared estate would let one tenant's "Run ingest" change
-    what another tenant sees.
+    what another tenant sees. The served estate is stored, so a restart
+    gives a tenant back its own estate, and each estate says which ingest
+    it was built from.
   * WHAT HAPPENED. `connector_runs` and `findings` were created as tables
     and never written. Ingests are now recorded with each connector's
     result, and findings are kept by fingerprint so a problem keeps the
@@ -81,15 +83,34 @@ class EstateService:
         self.clock = clock
         self._lock = threading.RLock()
         self._ingested: dict[str, analysis.Estate] = {}
+        self._served_from: dict[str, str] = {}  # org -> ingest id of _ingested
+        self._checked: set[str] = set()         # orgs whose stored estate was looked for
         self._versions: dict[str, int] = {}
         self._views: dict[str, tuple] = {}      # org -> (base, version, estate)
         self._findings: dict[str, tuple] = {}   # org -> (estate, findings)
 
     # ------------------------------------------------------------ estates
     def base(self, organization: str):
-        estate = self._ingested.get(organization)
-        if estate is not None:
-            return estate
+        """The tenant's own ingested estate, or the server's startup one.
+
+        The tenant's own comes from memory, or from the store after a
+        restart. Looked up in the store once per process, since this
+        process is the only writer of it.
+        """
+        with self._lock:
+            estate = self._ingested.get(organization)
+            if estate is not None:
+                return estate
+            if organization not in self._checked:
+                self._checked.add(organization)
+                row = self.db.query_one(
+                    'SELECT ingest_id, payload FROM served_estates'
+                    ' WHERE organization_id = ?', (organization,))
+                if row is not None:
+                    estate = analysis.Estate(json.loads(row['payload']))
+                    self._ingested[organization] = estate
+                    self._served_from[organization] = row['ingest_id']
+                    return estate
         return self.provider() if self.provider is not None else None
 
     def for_org(self, organization: str):
@@ -110,10 +131,22 @@ class EstateService:
     def _bump(self, organization: str) -> None:
         self._versions[organization] = self._versions.get(organization, 0) + 1
 
-    def replace(self, organization: str, payload: dict) -> analysis.Estate:
-        with self._lock:
-            estate = analysis.Estate(payload)
+    def replace(self, organization: str, payload: dict,
+                ingest_id: str) -> analysis.Estate:
+        """Serve this tenant a new estate, and keep it across restarts."""
+        stored = json.dumps(payload)
+        with self._lock, self.db.write() as cur:
+            cur.execute(
+                'INSERT INTO served_estates (organization_id, ingest_id, payload,'
+                ' stored_at) VALUES (?, ?, ?, ?)'
+                ' ON CONFLICT (organization_id) DO UPDATE SET'
+                ' ingest_id = excluded.ingest_id, payload = excluded.payload,'
+                ' stored_at = excluded.stored_at',
+                (organization, ingest_id, stored, int(self.clock())))
+            estate = analysis.Estate(json.loads(stored))
             self._ingested[organization] = estate
+            self._served_from[organization] = ingest_id
+            self._checked.add(organization)
             self._bump(organization)
             return estate
 
@@ -176,15 +209,31 @@ class EstateService:
         record['succeeded'] = record['connectors_run'] - record['connectors_failed']
         return record
 
+    def _startup_ingest(self):
+        return self.db.query_one(
+            'SELECT * FROM ingests WHERE organization_id IS NULL'
+            ' ORDER BY finished_at DESC, rowid DESC LIMIT 1')
+
     def latest_ingest(self, organization: str) -> dict | None:
-        """This tenant's last ingest, or the server's startup one."""
+        """This tenant's last ingest run, or the server's startup one.
+
+        The last RUN, which is not always what the tenant is served: a run
+        in which every connector failed is recorded here and changes no
+        estate. `served_ingest` answers which ingest the estate came from.
+        """
         row = self.db.query_one(
             'SELECT * FROM ingests WHERE organization_id = ?'
             ' ORDER BY finished_at DESC, rowid DESC LIMIT 1', (organization,))
         if row is None:
-            row = self.db.query_one(
-                'SELECT * FROM ingests WHERE organization_id IS NULL'
-                ' ORDER BY finished_at DESC, rowid DESC LIMIT 1')
+            row = self._startup_ingest()
+        return self._ingest_out(dict(row)) if row is not None else None
+
+    def served_ingest(self, organization: str) -> dict | None:
+        """The ingest the estate this tenant is served was built from."""
+        self.base(organization)
+        ingest_id = self._served_from.get(organization)
+        row = (self.db.query_one('SELECT * FROM ingests WHERE id = ?', (ingest_id,))
+               if ingest_id else self._startup_ingest())
         return self._ingest_out(dict(row)) if row is not None else None
 
     # ----------------------------------------------------------- findings
