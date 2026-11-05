@@ -207,9 +207,9 @@
       return el(GX.Fragment, null,
         head('Connectors', d.connectors.length + ' integrations across ' + Object.keys(cats).length + ' categories · ' + inbound.length + ' bring data in · ' + outbound.length + ' send alerts out', runBtn),
         s.running ? el('div.callout.info', { role: 'status' }, icon('info', 18), el('div.body', null, el('strong', null, 'Running ' + inbound.length + ' connectors'),
-          el('span.dim', null, d.mode === 'replay' ? 'Each replays its recorded response, then entities are resolved across sources and the graph is rebuilt.' : 'Each calls its vendor API, then entities are resolved and the graph rebuilt.'))) : null,
+          el('span.dim', null, d.mode === 'replay' ? 'Each replays its recorded response, then entities are resolved across sources and the graph is rebuilt.' : 'Each calls its vendor API, or for CloudTrail reads the delivered log files, then entities are resolved and the graph rebuilt.'))) : null,
         last,
-        tableFor('Pulling data in', inbound.length + ' connectors · ' + Object.keys(inCats).length + ' categories', 'Live calls the vendor API. Replay re-reads a recorded response.', inbound, true),
+        tableFor('Pulling data in', inbound.length + ' connectors · ' + Object.keys(inCats).length + ' categories', 'Live calls each vendor API, or reads CloudTrail log files. Replay re-reads a recording.', inbound, true),
         tableFor('Pushing alerts out', outbound.length + ' connectors · ' + Object.keys(outCats).length + ' categories', 'In replay an outbound connector builds its message and sends nothing.', outbound, false));
     }
   });

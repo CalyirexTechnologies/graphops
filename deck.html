@@ -327,8 +327,9 @@ Both engines agree on every answer.</pre>
     nine categories. Each inbound connector has one code path and two
     transports. Replay answers its requests from a recording of the vendor's
     documented API, so the pipeline runs with no account, no key and no
-    network. Live sends the same requests over HTTP and refuses to start
-    without credentials.</p>
+    network. Live sends the same requests over HTTP, or for CloudTrail reads
+    the trail's delivered log files, and refuses to start without
+    credentials.</p>
     <pre>splunk     sentinel    crowdstrike   okta      entra
 cloudtrail qualys      tenable       servicenow          inbound
 jira       slack       teams         pagerduty           outbound
@@ -504,9 +505,10 @@ auditor  2.0  192.0.2.41 -> svc-deploy
         nothing installed. A CI job proves it by importing them on a clean
         interpreter and failing if anything third-party was pulled in.</li>
         <li>Both engines run on every demo and are compared.</li>
-        <li>Every live connector path runs over real HTTP in the tests, against
-        a local server answering the documented API, and has to build exactly
-        the graph replay builds.</li>
+        <li>Every live connector path runs in the tests, eight over real HTTP
+        against a local server answering the documented API and CloudTrail
+        from delivered log files. Each has to build exactly the graph replay
+        builds.</li>
         <li>The API, the console, the roles, the redaction and the audit chain
         are working code, with 358 tests across the product.</li>
       </ul>
