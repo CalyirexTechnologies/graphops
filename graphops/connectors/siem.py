@@ -47,13 +47,27 @@ class SplunkConnector(Connector):
 
     SAVED_SEARCH = 'GraphOps - Perimeter Access Summary'
 
-    def fetch_live(self) -> dict:
-        host = self.credentials['SPLUNK_HOST'].rstrip('/')
-        url = ('%s/services/saved/searches/%s/history?output_mode=json'
-               % (host, self.SAVED_SEARCH.replace(' ', '%20')))
-        return self.http_get_json(
-            url, headers={'Authorization': 'Bearer %s'
-                          % self.credentials['SPLUNK_TOKEN']})
+    def collect(self) -> dict:
+        """The latest run of the saved search, then that run's results.
+
+        Two calls, as Splunk's REST API is shaped. A saved search's
+        `history` lists the jobs it has dispatched; the rows are on the job,
+        at `search/v2/jobs/{sid}/results`. The first version of this read the
+        history response as though it held the rows.
+        """
+        import urllib.parse
+        host = self.setting('SPLUNK_HOST').rstrip('/')
+        headers = self.bearer(self.setting('SPLUNK_TOKEN'))
+        history = self.request('GET', '%s/services/saved/searches/%s/history?output_mode=json'
+                               % (host, urllib.parse.quote(self.SAVED_SEARCH, safe='')),
+                               headers=headers)
+        jobs = history.get('entry') or []
+        if not jobs:
+            return {'results': []}
+        latest = max(jobs, key=lambda job: str(job.get('updated') or job.get('published') or ''))
+        return self.request('GET', '%s/services/search/v2/jobs/%s/results?output_mode=json&count=0'
+                            % (host, urllib.parse.quote(str(latest['name']), safe='')),
+                            headers=headers)
 
     def transform(self, payload: dict) -> GraphDelta:
         delta = GraphDelta()
@@ -95,7 +109,7 @@ class SplunkConnector(Connector):
 
 
 class SentinelConnector(Connector):
-    """Microsoft Sentinel incidents, through the Azure Log Analytics query API.
+    """Microsoft Sentinel incidents and their entities, through the SecurityInsights REST API.
 
     Sentinel groups alerts into incidents, so one record here can carry
     several entities. The entity list is what becomes nodes; the incident
@@ -110,62 +124,90 @@ class SentinelConnector(Connector):
     required_credentials = ('AZURE_TENANT_ID', 'AZURE_CLIENT_ID',
                             'AZURE_CLIENT_SECRET', 'SENTINEL_WORKSPACE_ID')
     api_reference = ('https://learn.microsoft.com/en-us/rest/api/'
-                     'securityinsights/incidents/list')
+                     'securityinsights/incidents/list-entities')
+    defaults = {'AZURE_LOGIN_URL': 'https://login.microsoftonline.com',
+                'AZURE_MANAGEMENT_URL': 'https://management.azure.com'}
+    #: The workspace's full Azure resource ID. It is part of every request
+    #: path, so the recording was made against this one.
+    replay_settings = {'SENTINEL_WORKSPACE_ID': (
+        '/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/soc'
+        '/providers/Microsoft.OperationalInsights/workspaces/sentinel-ws')}
+    API_VERSION = '2023-02-01'
 
-    def fetch_live(self) -> dict:
-        workspace = self.credentials['SENTINEL_WORKSPACE_ID']
-        url = ('https://management.azure.com%s/providers/'
-               'Microsoft.SecurityInsights/incidents?api-version=2023-02-01'
-               % workspace)
-        # The bearer token is minted by the caller's Azure identity and
-        # handed in; this connector never holds a client secret longer than
-        # the request that uses it.
-        return self.http_get_json(
-            url, headers={'Authorization': 'Bearer %s'
-                          % self.credentials.get('AZURE_ACCESS_TOKEN', '')})
+    def collect(self) -> dict:
+        """Incidents, then each incident's entities.
+
+        Entities are not part of an incident. Azure returns them from a
+        separate POST per incident, which is how this calls them now; the
+        first version read a `relatedEntities` field off the incident that
+        the API does not return.
+        """
+        token = self.azure_token('https://management.azure.com/.default')
+        headers = self.bearer(token)
+        base = (self.setting('AZURE_MANAGEMENT_URL').rstrip('/')
+                + self.setting('SENTINEL_WORKSPACE_ID')
+                + '/providers/Microsoft.SecurityInsights/incidents')
+        incidents = self.follow('%s?api-version=%s' % (base, self.API_VERSION),
+                                headers=headers, items_key='value', next_key='nextLink')
+        entities = {}
+        for incident in incidents:
+            name = str(incident.get('name') or '')
+            if name:
+                entities[name] = self.request(
+                    'POST', '%s/%s/entities?api-version=%s' % (base, name, self.API_VERSION),
+                    headers=headers, json_body={}).get('entities', [])
+        return {'incidents': incidents, 'entities': entities}
 
     _SEVERITY_COST = {'High': 1.0, 'Medium': 2.0, 'Low': 3.0,
                       'Informational': 4.0}
 
+    @staticmethod
+    def _entity_value(entity: dict) -> tuple[str, str]:
+        """(kind, value) from one documented Sentinel entity."""
+        kind = str(entity.get('kind') or '').lower()
+        props = entity.get('properties') or {}
+        if kind == 'ip':
+            return 'ip', str(props.get('address') or '').strip()
+        if kind == 'account':
+            return 'account', str(props.get('accountName') or props.get('friendlyName') or '').strip()
+        if kind == 'host':
+            return 'host', str(props.get('hostName') or props.get('friendlyName') or '').strip()
+        return kind, str(props.get('friendlyName') or '').strip()
+
     def transform(self, payload: dict) -> GraphDelta:
         delta = GraphDelta()
-        for incident in payload.get('value', []):
+        for incident in payload.get('incidents', []):
             properties = incident.get('properties', {})
             title = str(properties.get('title') or 'sentinel incident')
             when = str(properties.get('createdTimeUtc') or '')
             severity = str(properties.get('severity') or 'Medium')
             rule_node = _rule_id(title)
             delta.add_node(rule_node, NodeKind.RULE, title, Zone.INTERNAL)
-
-            for entity in properties.get('relatedEntities', []):
-                kind = str(entity.get('kind') or '').lower()
-                value = str(entity.get('value') or '').strip()
+            addresses, accounts = [], []
+            for entity in payload.get('entities', {}).get(incident.get('name'), []):
+                kind, value = self._entity_value(entity)
                 if not value:
                     continue
-                if kind in ('ip', 'ipaddress'):
+                if kind == 'ip':
+                    addresses.append(value)
                     delta.add_node(_address_id(value), NodeKind.ADDRESS, value,
                                    Zone.UNTRUSTED)
                     delta.add_edge(_address_id(value), rule_node,
                                    EdgeKind.TRIPPED, when)
-                elif kind in ('account', 'user'):
+                elif kind == 'account':
+                    accounts.append(value)
                     identity = 'id:%s' % value
                     delta.add_node(identity, NodeKind.IDENTITY, value,
                                    Zone.INTERNAL)
                     delta.add_edge(identity, rule_node, EdgeKind.TRIPPED, when)
-                elif kind in ('host', 'azureresource'):
-                    asset = 'asset:%s' % value
-                    delta.add_node(asset, NodeKind.ASSET, value, Zone.INTERNAL)
-
+                elif kind == 'host':
+                    delta.add_node('asset:%s' % value, NodeKind.ASSET, value, Zone.INTERNAL)
             # An incident linking an address to an account is Sentinel saying
             # the address used that account. That is a YIELDS edge, and it is
             # the single most useful thing a SIEM gives this graph.
-            addresses = [e.get('value') for e in properties.get('relatedEntities', [])
-                         if str(e.get('kind', '')).lower() in ('ip', 'ipaddress')]
-            accounts = [e.get('value') for e in properties.get('relatedEntities', [])
-                        if str(e.get('kind', '')).lower() in ('account', 'user')]
             for address in addresses:
                 for account in accounts:
-                    delta.add_edge(_address_id(str(address)), 'id:%s' % account,
+                    delta.add_edge(_address_id(address), 'id:%s' % account,
                                    EdgeKind.YIELDS, when,
                                    cost=self._SEVERITY_COST.get(severity, 2.0))
             delta.stats['incidents'] = delta.stats.get('incidents', 0) + 1

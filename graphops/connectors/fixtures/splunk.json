@@ -1,163 +1,223 @@
 {
-  "preview": false,
-  "init_offset": 0,
-  "messages": [],
-  "fields": [
+  "vendor": "Splunk",
+  "documented_at": "Splunk REST API reference, search endpoints",
+  "recorded_at": "2026-11-03T09:00:00Z",
+  "exchanges": [
     {
-      "name": "_time"
+      "request": {
+        "method": "GET",
+        "path": "/services/saved/searches/GraphOps%20-%20Perimeter%20Access%20Summary/history",
+        "query": {
+          "output_mode": "json"
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "links": {},
+          "origin": "/services/saved/searches/GraphOps%20-%20Perimeter%20Access%20Summary/history",
+          "updated": "2026-11-03T09:00:00Z",
+          "generator": {
+            "build": "replay",
+            "version": "9.4.0"
+          },
+          "entry": [
+            {
+              "name": "scheduler__nobody__search__RMD5f1e2d3c4b5a69788_at_1793782800_412",
+              "id": "/services/search/jobs/scheduler__nobody__search__RMD5f1e2d3c4b5a69788_at_1793782800_412",
+              "updated": "2026-11-03T08:00:00Z",
+              "published": "2026-11-03T08:00:00Z",
+              "content": {
+                "dispatchState": "DONE",
+                "isDone": true
+              }
+            }
+          ],
+          "paging": {
+            "total": 1,
+            "perPage": 30,
+            "offset": 0
+          },
+          "messages": []
+        }
+      }
     },
     {
-      "name": "src_ip"
-    },
-    {
-      "name": "uri_path"
-    },
-    {
-      "name": "count"
-    },
-    {
-      "name": "status"
-    },
-    {
-      "name": "notable_rule"
-    }
-  ],
-  "results": [
-    {
-      "_time": "2026-09-24T09:00:00Z",
-      "src_ip": "198.51.100.21",
-      "uri_path": "/login",
-      "count": 412,
-      "status": 404,
-      "notable_rule": "path-enumeration"
-    },
-    {
-      "_time": "2026-09-24T09:00:00Z",
-      "src_ip": "198.51.100.21",
-      "uri_path": "/api/orders",
-      "count": 412,
-      "status": 404,
-      "notable_rule": "path-enumeration"
-    },
-    {
-      "_time": "2026-09-24T09:00:00Z",
-      "src_ip": "198.51.100.84",
-      "uri_path": "/login",
-      "count": 412,
-      "status": 404,
-      "notable_rule": null
-    },
-    {
-      "_time": "2026-09-24T09:00:00Z",
-      "src_ip": "198.51.100.84",
-      "uri_path": "/api/orders",
-      "count": 412,
-      "status": 404,
-      "notable_rule": null
-    },
-    {
-      "_time": "2026-09-24T09:00:00Z",
-      "src_ip": "203.0.113.9",
-      "uri_path": "/login",
-      "count": 412,
-      "status": 404,
-      "notable_rule": "path-enumeration"
-    },
-    {
-      "_time": "2026-09-24T09:00:00Z",
-      "src_ip": "203.0.113.9",
-      "uri_path": "/api/orders",
-      "count": 412,
-      "status": 404,
-      "notable_rule": "path-enumeration"
-    },
-    {
-      "_time": "2026-09-24T09:00:00Z",
-      "src_ip": "203.0.113.77",
-      "uri_path": "/login",
-      "count": 412,
-      "status": 404,
-      "notable_rule": null
-    },
-    {
-      "_time": "2026-09-24T09:00:00Z",
-      "src_ip": "203.0.113.77",
-      "uri_path": "/api/orders",
-      "count": 412,
-      "status": 404,
-      "notable_rule": null
-    },
-    {
-      "_time": "2026-09-24T09:00:00Z",
-      "src_ip": "192.0.2.133",
-      "uri_path": "/login",
-      "count": 412,
-      "status": 404,
-      "notable_rule": "repeated-auth-failure"
-    },
-    {
-      "_time": "2026-09-24T09:00:00Z",
-      "src_ip": "192.0.2.133",
-      "uri_path": "/api/orders",
-      "count": 412,
-      "status": 404,
-      "notable_rule": "repeated-auth-failure"
-    },
-    {
-      "_time": "2026-09-24T09:00:00Z",
-      "src_ip": "198.51.100.21",
-      "uri_path": "/admin",
-      "count": 88,
-      "status": 403,
-      "notable_rule": "path-enumeration"
-    },
-    {
-      "_time": "2026-09-24T09:00:00Z",
-      "src_ip": "203.0.113.9",
-      "uri_path": "/admin",
-      "count": 88,
-      "status": 403,
-      "notable_rule": "path-enumeration"
-    },
-    {
-      "_time": "2026-09-24T09:00:00Z",
-      "src_ip": "192.0.2.133",
-      "uri_path": "/admin",
-      "count": 88,
-      "status": 403,
-      "notable_rule": "path-enumeration"
-    },
-    {
-      "_time": "2026-10-28T09:00:00Z",
-      "src_ip": "198.51.100.84",
-      "uri_path": "/api/uploads",
-      "count": 17,
-      "status": 200,
-      "notable_rule": null
-    },
-    {
-      "_time": "2026-10-28T09:00:00Z",
-      "src_ip": "203.0.113.77",
-      "uri_path": "/api/uploads",
-      "count": 17,
-      "status": 200,
-      "notable_rule": null
-    },
-    {
-      "_time": "2026-09-24T09:00:00Z",
-      "src_ip": "192.0.2.41",
-      "uri_path": "/login",
-      "count": 3,
-      "status": 200,
-      "notable_rule": null
-    },
-    {
-      "_time": "2026-10-28T09:00:00Z",
-      "src_ip": "",
-      "uri_path": "/login",
-      "count": 1,
-      "status": 200,
-      "notable_rule": null
+      "request": {
+        "method": "GET",
+        "path": "/services/search/v2/jobs/scheduler__nobody__search__RMD5f1e2d3c4b5a69788_at_1793782800_412/results",
+        "query": {
+          "output_mode": "json",
+          "count": "0"
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "preview": false,
+          "init_offset": 0,
+          "messages": [],
+          "fields": [
+            {
+              "name": "_time"
+            },
+            {
+              "name": "src_ip"
+            },
+            {
+              "name": "uri_path"
+            },
+            {
+              "name": "count"
+            },
+            {
+              "name": "status"
+            },
+            {
+              "name": "notable_rule"
+            }
+          ],
+          "results": [
+            {
+              "_time": "2026-09-24T09:00:00Z",
+              "src_ip": "198.51.100.21",
+              "uri_path": "/login",
+              "count": "412",
+              "status": "404",
+              "notable_rule": "path-enumeration"
+            },
+            {
+              "_time": "2026-09-24T09:00:00Z",
+              "src_ip": "198.51.100.21",
+              "uri_path": "/api/orders",
+              "count": "412",
+              "status": "404",
+              "notable_rule": "path-enumeration"
+            },
+            {
+              "_time": "2026-09-24T09:00:00Z",
+              "src_ip": "198.51.100.84",
+              "uri_path": "/login",
+              "count": "412",
+              "status": "404",
+              "notable_rule": null
+            },
+            {
+              "_time": "2026-09-24T09:00:00Z",
+              "src_ip": "198.51.100.84",
+              "uri_path": "/api/orders",
+              "count": "412",
+              "status": "404",
+              "notable_rule": null
+            },
+            {
+              "_time": "2026-09-24T09:00:00Z",
+              "src_ip": "203.0.113.9",
+              "uri_path": "/login",
+              "count": "412",
+              "status": "404",
+              "notable_rule": "path-enumeration"
+            },
+            {
+              "_time": "2026-09-24T09:00:00Z",
+              "src_ip": "203.0.113.9",
+              "uri_path": "/api/orders",
+              "count": "412",
+              "status": "404",
+              "notable_rule": "path-enumeration"
+            },
+            {
+              "_time": "2026-09-24T09:00:00Z",
+              "src_ip": "203.0.113.77",
+              "uri_path": "/login",
+              "count": "412",
+              "status": "404",
+              "notable_rule": null
+            },
+            {
+              "_time": "2026-09-24T09:00:00Z",
+              "src_ip": "203.0.113.77",
+              "uri_path": "/api/orders",
+              "count": "412",
+              "status": "404",
+              "notable_rule": null
+            },
+            {
+              "_time": "2026-09-24T09:00:00Z",
+              "src_ip": "192.0.2.133",
+              "uri_path": "/login",
+              "count": "412",
+              "status": "404",
+              "notable_rule": "repeated-auth-failure"
+            },
+            {
+              "_time": "2026-09-24T09:00:00Z",
+              "src_ip": "192.0.2.133",
+              "uri_path": "/api/orders",
+              "count": "412",
+              "status": "404",
+              "notable_rule": "repeated-auth-failure"
+            },
+            {
+              "_time": "2026-09-24T09:00:00Z",
+              "src_ip": "198.51.100.21",
+              "uri_path": "/admin",
+              "count": "88",
+              "status": "403",
+              "notable_rule": "path-enumeration"
+            },
+            {
+              "_time": "2026-09-24T09:00:00Z",
+              "src_ip": "203.0.113.9",
+              "uri_path": "/admin",
+              "count": "88",
+              "status": "403",
+              "notable_rule": "path-enumeration"
+            },
+            {
+              "_time": "2026-09-24T09:00:00Z",
+              "src_ip": "192.0.2.133",
+              "uri_path": "/admin",
+              "count": "88",
+              "status": "403",
+              "notable_rule": "path-enumeration"
+            },
+            {
+              "_time": "2026-10-28T09:00:00Z",
+              "src_ip": "198.51.100.84",
+              "uri_path": "/api/uploads",
+              "count": "17",
+              "status": "200",
+              "notable_rule": null
+            },
+            {
+              "_time": "2026-10-28T09:00:00Z",
+              "src_ip": "203.0.113.77",
+              "uri_path": "/api/uploads",
+              "count": "17",
+              "status": "200",
+              "notable_rule": null
+            },
+            {
+              "_time": "2026-09-24T09:00:00Z",
+              "src_ip": "192.0.2.41",
+              "uri_path": "/login",
+              "count": "3",
+              "status": "200",
+              "notable_rule": null
+            },
+            {
+              "_time": "2026-10-28T09:00:00Z",
+              "src_ip": "",
+              "uri_path": "/login",
+              "count": "1",
+              "status": "200",
+              "notable_rule": null
+            }
+          ],
+          "highlighted": {}
+        }
+      }
     }
   ]
 }

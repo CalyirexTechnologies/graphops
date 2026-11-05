@@ -18,7 +18,7 @@ direction for every edge kind.
 from __future__ import annotations
 
 from ..vocab import EdgeKind, NodeKind, Zone
-from .base import Connector, GraphDelta
+from .base import Connector, ConnectorError, GraphDelta
 
 #: Events that hand an attacker a credential or a new identity.
 _CREDENTIAL_EVENTS = frozenset({
@@ -50,6 +50,25 @@ def _iam_action(record: dict, event: str) -> str:
     return '%s:%s' % (service, event) if service and event else event
 
 
+def _read_log_dir(path: str) -> list[dict]:
+    """Every CloudTrail log file under a directory, gzipped or not."""
+    import gzip
+    import json
+    from pathlib import Path
+    root = Path(path)
+    if not root.is_dir():
+        raise ConnectorError('cloudtrail: %s is not a directory' % path)
+    out = []
+    for file in sorted(root.rglob('*.json*')):
+        opener = gzip.open if file.suffix == '.gz' else open
+        try:
+            with opener(file, 'rt', encoding='utf-8') as handle:
+                out.append({'name': file.name, 'content': json.load(handle)})
+        except (OSError, ValueError) as exc:
+            raise ConnectorError('cloudtrail: %s is not a CloudTrail log file' % file.name) from exc
+    return out
+
+
 class CloudTrailConnector(Connector):
     """AWS CloudTrail events, from LookupEvents or a delivered log file."""
 
@@ -57,20 +76,29 @@ class CloudTrailConnector(Connector):
     vendor = 'Amazon Web Services'
     product = 'CloudTrail'
     category = 'cloud'
-    required_credentials = ('AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY',
-                            'AWS_REGION')
-    api_reference = ('https://docs.aws.amazon.com/awscloudtrail/latest/'
-                     'APIReference/API_LookupEvents.html')
+    required_credentials = ('CLOUDTRAIL_LOG_DIR',)
+    api_reference = ('https://docs.aws.amazon.com/awscloudtrail/latest/userguide/'
+                     'cloudtrail-log-file-examples.html')
 
-    def fetch_live(self) -> dict:
-        # LookupEvents is a SigV4-signed POST. Signing it correctly by hand
-        # is more code than this file should carry, so the live path expects
-        # the caller's own boto3 session to hand over the page it already
-        # fetched. Refusing is better than a half-signed request that fails
-        # in a way nobody can debug.
-        raise NotImplementedError(
-            'pass CloudTrail records in via transform(); SigV4 signing is the '
-            "caller's boto3 session, not this connector's job")
+    def fetch(self) -> dict:
+        """CloudTrail's delivered log files, read from a directory.
+
+        A trail delivers gzipped JSON files of `Records` to S3. Live mode
+        reads them from CLOUDTRAIL_LOG_DIR, the directory a customer's own
+        `aws s3 sync` of the trail's bucket writes to, which keeps the AWS
+        credentials and the SigV4 signing in the AWS CLI where they belong.
+        The first version named AWS keys it never used and refused live mode
+        outright; this one has a live path that works. Replay reads the same
+        file contents from the recording.
+        """
+        if self.mode == 'replay':
+            files = self.load_fixture().get('files', [])
+        else:
+            files = _read_log_dir(self.setting('CLOUDTRAIL_LOG_DIR'))
+        records = []
+        for entry in files:
+            records.extend((entry.get('content') or {}).get('Records') or [])
+        return {'Records': records, 'files': len(files)}
 
     def transform(self, payload: dict) -> GraphDelta:
         delta = GraphDelta()

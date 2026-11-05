@@ -1,31 +1,68 @@
 {
-  "value": [
+  "vendor": "Microsoft Entra ID",
+  "documented_at": "Microsoft Graph v1.0, directoryRoles",
+  "recorded_at": "2026-11-03T09:00:00Z",
+  "exchanges": [
     {
-      "id": "r1",
-      "displayName": "Application Administrator",
-      "description": "Can manage all aspects of app registrations.",
-      "members": [
-        {
-          "@odata.type": "#microsoft.graph.servicePrincipal",
-          "id": "sp1",
-          "displayName": "ci-pipeline",
-          "createdDateTime": "2026-09-24T09:00:00Z"
+      "request": {
+        "method": "POST",
+        "path": "/replay/oauth2/v2.0/token"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "token_type": "Bearer",
+          "expires_in": 3599,
+          "ext_expires_in": 3599,
+          "access_token": "replay-token"
         }
-      ]
+      }
     },
     {
-      "id": "r2",
-      "displayName": "Security Reader",
-      "description": "Can read security information.",
-      "members": [
-        {
-          "@odata.type": "#microsoft.graph.user",
-          "id": "au1",
-          "userPrincipalName": "auditor@example.invalid",
-          "displayName": "Auditor",
-          "createdDateTime": "2026-09-24T09:00:00Z"
+      "request": {
+        "method": "GET",
+        "path": "/v1.0/directoryRoles",
+        "query": {
+          "$expand": "members"
         }
-      ]
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#directoryRoles",
+          "value": [
+            {
+              "id": "r1",
+              "deletedDateTime": null,
+              "displayName": "Application Administrator",
+              "description": "Can create and manage all aspects of app registrations and enterprise apps.",
+              "roleTemplateId": "9b895d92-2cd3-44c7-9d02-a6ac2d5ea5c3",
+              "members": [
+                {
+                  "@odata.type": "#microsoft.graph.servicePrincipal",
+                  "id": "sp1",
+                  "displayName": "ci-pipeline"
+                }
+              ]
+            },
+            {
+              "id": "r2",
+              "deletedDateTime": null,
+              "displayName": "Security Reader",
+              "description": "Can read security information and reports in Azure AD and Office 365.",
+              "roleTemplateId": "5d6b6bb7-de71-4623-b4af-96380a352509",
+              "members": [
+                {
+                  "@odata.type": "#microsoft.graph.user",
+                  "id": "au1",
+                  "displayName": "Auditor",
+                  "userPrincipalName": "auditor@example.invalid"
+                }
+              ]
+            }
+          ]
+        }
+      }
     }
   ]
 }

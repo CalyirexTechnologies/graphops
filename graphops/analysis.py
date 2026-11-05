@@ -166,7 +166,11 @@ class Estate:
         for count, e in enumerate(self.edges):
             if count >= MAX_EDGES_IN_MEMORY:
                 break
-            if only_before is not None and _when(e['first_seen']) >= only_before:
+            # An edge whose start is unknown is counted as having always
+            # been there. Unknown age is not the same as new, and treating it
+            # as new would report every such grant as fresh activity.
+            if only_before is not None and e.get('first_seen') \
+                    and _when(e['first_seen']) >= only_before:
                 continue
             graph.add(e['src'], e['dst'], kind=e['kind'],
                       cost=float(e.get('cost', 1.0)))
@@ -518,7 +522,8 @@ def novel_activity(estate, window_hours=24, max_hops=2, now=None):
     current = estate.loaded()
     before = estate.load(only_before=cutoff)
 
-    fresh = [e for e in estate.edges if _when(e['first_seen']) >= cutoff][:5000]
+    fresh = [e for e in estate.edges
+             if e.get('first_seen') and _when(e['first_seen']) >= cutoff][:5000]
     new_edges = [{'from': current.describe(e['src']),
                   'to': current.describe(e['dst']),
                   'edge': e['kind'], 'first_seen': str(e['first_seen'])}
@@ -629,7 +634,7 @@ def segments(estate, window_hours=24, now=None):
 
     fresh_nodes = set()
     for e in estate.edges:
-        if _when(e['first_seen']) >= cutoff:
+        if e.get('first_seen') and _when(e['first_seen']) >= cutoff:
             fresh_nodes.add(e['src'])
             fresh_nodes.add(e['dst'])
 
@@ -755,11 +760,25 @@ def over_privilege(estate, idle_days=IDLE_AFTER_DAYS, now=None):
         stamps = [s for s in (g.get('last_used'), last_seen_use.get(pair)) if s]
         last = max(stamps) if stamps else None
         idle_for = None
+        at_least = False
+        window = g.get('usage_since')
         if last:
             idle_for = max(0, (now - _when(last)).days)
             status = 'used' if idle_for <= idle_days else 'idle'
+        elif not g.get('usage_reported', True):
+            status = 'unknown'
+        elif window and (not g.get('first_seen') or g['first_seen'] < window):
+            # The source's use log starts after the grant was made, and holds
+            # no use. What is known is "unused for at least the whole log",
+            # not "never used", and the answer says the first.
+            idle_for = max(0, (now - _when(window)).days)
+            at_least = True
+            # Absence of use is never use. A log covering at least the idle
+            # threshold shows the grant idle; a shorter one cannot say, and
+            # the first version of this line called that case "used".
+            status = 'idle' if idle_for >= idle_days else 'unknown'
         else:
-            status = 'never' if g.get('usage_reported', True) else 'unknown'
+            status = 'never'
         target = loaded.meta.get(g['dst'], {})
         rows.append({
             'identity': loaded.describe(g['src'],
@@ -770,6 +789,7 @@ def over_privilege(estate, idle_days=IDLE_AFTER_DAYS, now=None):
             'granted_at': g.get('first_seen') or None,
             'last_used': last,
             'idle_days': idle_for,
+            'idle_at_least': at_least,
             'status': status,
             'reaches_crown_jewel': bool(target.get('crown', False)),
             'routes_through': on_route.get(pair, 0),

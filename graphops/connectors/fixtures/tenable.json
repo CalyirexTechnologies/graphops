@@ -1,42 +1,94 @@
 {
-  "vulnerabilities": [
+  "vendor": "Tenable Vulnerability Management",
+  "documented_at": "Exports API: vulns",
+  "recorded_at": "2026-11-03T09:00:00Z",
+  "exchanges": [
     {
-      "plugin_id": 186234,
-      "plugin_name": "Unauthenticated file upload",
-      "cves": [
-        "CVE-2026-1188"
-      ],
-      "severity": 4,
-      "cvss3_base_score": 9.1,
-      "exploit_maturity": "functional",
-      "first_found": "2026-09-24T09:00:00Z",
-      "count": 1,
-      "assets": [
-        {
-          "id": "a3",
-          "hostname": "file-store",
-          "fqdn": "file-store.internal.invalid"
+      "request": {
+        "method": "POST",
+        "path": "/vulns/export",
+        "body": {
+          "num_assets": 500
         }
-      ]
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "export_uuid": "2f8c1d4a-6b3e-4c1a-9e7d-5a0b1c2d3e4f"
+        }
+      }
     },
     {
-      "plugin_id": 142991,
-      "plugin_name": "Outdated TLS library",
-      "cves": [
-        "CVE-2025-9910"
-      ],
-      "severity": 3,
-      "cvss3_base_score": 7.5,
-      "exploit_maturity": "poc",
-      "first_found": "2026-09-24T09:00:00Z",
-      "count": 1,
-      "assets": [
-        {
-          "id": "a1",
-          "hostname": "storefront-web",
-          "fqdn": "storefront-web.internal.invalid"
+      "request": {
+        "method": "GET",
+        "path": "/vulns/export/2f8c1d4a-6b3e-4c1a-9e7d-5a0b1c2d3e4f/status"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "uuid": "2f8c1d4a-6b3e-4c1a-9e7d-5a0b1c2d3e4f",
+          "status": "FINISHED",
+          "chunks_available": [
+            1
+          ],
+          "chunks_failed": [],
+          "chunks_cancelled": [],
+          "total_chunks": 1
         }
-      ]
+      }
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/vulns/export/2f8c1d4a-6b3e-4c1a-9e7d-5a0b1c2d3e4f/chunks/1"
+      },
+      "response": {
+        "status": 200,
+        "body": [
+          {
+            "asset": {
+              "uuid": "a3",
+              "hostname": "file-store",
+              "fqdn": "file-store.internal.invalid",
+              "ipv4": "10.2.0.31"
+            },
+            "plugin": {
+              "id": 186234,
+              "name": "Unauthenticated file upload",
+              "cve": [
+                "CVE-2026-1188"
+              ],
+              "cvss3_base_score": 9.1,
+              "exploitability_ease": "Exploits are available"
+            },
+            "severity": "critical",
+            "state": "OPEN",
+            "first_found": "2026-09-24T09:00:00Z",
+            "last_found": "2026-11-03T09:00:00Z"
+          },
+          {
+            "asset": {
+              "uuid": "a1",
+              "hostname": "storefront-web",
+              "fqdn": "storefront-web.internal.invalid",
+              "ipv4": "10.2.0.11"
+            },
+            "plugin": {
+              "id": 142991,
+              "name": "Outdated TLS library",
+              "cve": [
+                "CVE-2025-9910"
+              ],
+              "cvss3_base_score": 7.5,
+              "exploitability_ease": "Exploits are available"
+            },
+            "severity": "high",
+            "state": "OPEN",
+            "first_found": "2026-09-24T09:00:00Z",
+            "last_found": "2026-11-03T09:00:00Z"
+          }
+        ]
+      }
     }
   ]
 }

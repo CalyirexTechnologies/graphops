@@ -1,60 +1,134 @@
 {
-  "items": [
+  "vendor": "ServiceNow CMDB",
+  "documented_at": "Table API",
+  "recorded_at": "2026-11-03T09:00:00Z",
+  "exchanges": [
     {
-      "sys_id": "ci1",
-      "name": "billing-database",
-      "sys_class_name": "cmdb_ci_db_instance",
-      "data_classification": "PCI",
-      "owned_by": "finance-ops",
-      "used_for": "Production"
+      "request": {
+        "method": "GET",
+        "path": "/api/now/table/cmdb_ci",
+        "query": {
+          "sysparm_limit": "500",
+          "sysparm_display_value": "true",
+          "sysparm_exclude_reference_link": "true",
+          "sysparm_fields": "sys_id,name,sys_class_name,used_for,owned_by,data_classification"
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "result": [
+            {
+              "sys_id": "6a1f0e2c1b8a4d10a0c0000000000001",
+              "name": "billing-database",
+              "sys_class_name": "Database Instance",
+              "data_classification": "PCI",
+              "owned_by": "finance-ops",
+              "used_for": "Production"
+            },
+            {
+              "sys_id": "6a1f0e2c1b8a4d10a0c0000000000002",
+              "name": "hr-database",
+              "sys_class_name": "Database Instance",
+              "data_classification": "PII",
+              "owned_by": "people-ops",
+              "used_for": "Production"
+            },
+            {
+              "sys_id": "6a1f0e2c1b8a4d10a0c0000000000003",
+              "name": "order-service",
+              "sys_class_name": "Application",
+              "data_classification": "Internal",
+              "owned_by": "commerce",
+              "used_for": "Production"
+            },
+            {
+              "sys_id": "6a1f0e2c1b8a4d10a0c0000000000004",
+              "name": "storefront-web",
+              "sys_class_name": "Application",
+              "data_classification": "Public",
+              "owned_by": "commerce",
+              "used_for": "Production"
+            },
+            {
+              "sys_id": "6a1f0e2c1b8a4d10a0c0000000000005",
+              "name": "file-store",
+              "sys_class_name": "Application",
+              "data_classification": "Internal",
+              "owned_by": "platform",
+              "used_for": "Production"
+            }
+          ]
+        }
+      }
     },
     {
-      "sys_id": "ci2",
-      "name": "hr-database",
-      "sys_class_name": "cmdb_ci_db_instance",
-      "data_classification": "PII",
-      "owned_by": "people-ops",
-      "used_for": "Production"
-    },
-    {
-      "sys_id": "ci3",
-      "name": "order-service",
-      "sys_class_name": "cmdb_ci_appl",
-      "data_classification": "Internal",
-      "owned_by": "commerce",
-      "used_for": "Production"
-    },
-    {
-      "sys_id": "ci4",
-      "name": "storefront-web",
-      "sys_class_name": "cmdb_ci_appl",
-      "data_classification": "Public",
-      "owned_by": "commerce",
-      "used_for": "Production"
-    },
-    {
-      "sys_id": "ci5",
-      "name": "file-store",
-      "sys_class_name": "cmdb_ci_appl",
-      "data_classification": "Internal",
-      "owned_by": "platform",
-      "used_for": "Production"
-    }
-  ],
-  "relationships": [
-    {
-      "sys_id": "rel1",
-      "parent": "ci3",
-      "child": "ci1",
-      "type": "Depends on::Used by",
-      "sys_created_on": "2026-10-28T09:00:00Z"
-    },
-    {
-      "sys_id": "rel2",
-      "parent": "ci4",
-      "child": "ci3",
-      "type": "Depends on::Used by",
-      "sys_created_on": "2026-09-24T09:00:00Z"
+      "request": {
+        "method": "GET",
+        "path": "/api/now/table/cmdb_rel_ci",
+        "query": {
+          "sysparm_limit": "1000",
+          "sysparm_display_value": "all",
+          "sysparm_fields": "sys_id,parent,child,type,sys_created_on"
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "result": [
+            {
+              "sys_id": {
+                "display_value": "rel1",
+                "value": "b1c2000000000000000000000000rel1"
+              },
+              "parent": {
+                "display_value": "order-service",
+                "value": "6a1f0e2c1b8a4d10a0c0000000000003",
+                "link": "https://replay.service-now.com/api/now/table/cmdb_ci/6a1f0e2c1b8a4d10a0c0000000000003"
+              },
+              "child": {
+                "display_value": "billing-database",
+                "value": "6a1f0e2c1b8a4d10a0c0000000000001",
+                "link": "https://replay.service-now.com/api/now/table/cmdb_ci/6a1f0e2c1b8a4d10a0c0000000000001"
+              },
+              "type": {
+                "display_value": "Depends on::Used by",
+                "value": "1a9cb166f1571100a92eb60da2bce5c5",
+                "link": "https://replay.service-now.com/api/now/table/cmdb_rel_type/1a9cb166f1571100a92eb60da2bce5c5"
+              },
+              "sys_created_on": {
+                "display_value": "2026-10-28 09:00:00",
+                "value": "2026-10-28 09:00:00"
+              }
+            },
+            {
+              "sys_id": {
+                "display_value": "rel2",
+                "value": "b1c2000000000000000000000000rel2"
+              },
+              "parent": {
+                "display_value": "storefront-web",
+                "value": "6a1f0e2c1b8a4d10a0c0000000000004",
+                "link": "https://replay.service-now.com/api/now/table/cmdb_ci/6a1f0e2c1b8a4d10a0c0000000000004"
+              },
+              "child": {
+                "display_value": "order-service",
+                "value": "6a1f0e2c1b8a4d10a0c0000000000003",
+                "link": "https://replay.service-now.com/api/now/table/cmdb_ci/6a1f0e2c1b8a4d10a0c0000000000003"
+              },
+              "type": {
+                "display_value": "Depends on::Used by",
+                "value": "1a9cb166f1571100a92eb60da2bce5c5",
+                "link": "https://replay.service-now.com/api/now/table/cmdb_rel_type/1a9cb166f1571100a92eb60da2bce5c5"
+              },
+              "sys_created_on": {
+                "display_value": "2026-09-24 09:00:00",
+                "value": "2026-09-24 09:00:00"
+              }
+            }
+          ]
+        }
+      }
     }
   ]
 }

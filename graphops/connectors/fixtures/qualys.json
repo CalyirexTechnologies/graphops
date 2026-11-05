@@ -1,36 +1,36 @@
 {
-  "HOST_LIST": [
+  "vendor": "Qualys VMDR",
+  "documented_at": "Host List Detection API and KnowledgeBase API, v2.0",
+  "recorded_at": "2026-11-03T09:00:00Z",
+  "exchanges": [
     {
-      "ID": 1,
-      "IP": "10.2.0.11",
-      "DNS": "storefront-web",
-      "DETECTION_LIST": [
-        {
-          "QID": 38657,
-          "CVE": "CVE-2025-9910",
-          "SEVERITY": 4,
-          "CVSS_BASE": "7.5",
-          "EXPLOIT_MATURITY": "poc",
-          "FIRST_FOUND_DATETIME": "2026-09-24T09:00:00Z",
-          "STATUS": "ACTIVE"
+      "request": {
+        "method": "GET",
+        "path": "/api/2.0/fo/asset/host/vm/detection/",
+        "query": {
+          "action": "list",
+          "status": "New,Active,Re-Opened"
         }
-      ]
+      },
+      "response": {
+        "status": 200,
+        "text": "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n<!DOCTYPE HOST_LIST_VM_DETECTION_OUTPUT SYSTEM \"https://qualysapi.qualys.com/api/2.0/fo/asset/host/vm/detection/host_list_vm_detection_output.dtd\">\n<HOST_LIST_VM_DETECTION_OUTPUT>\n  <RESPONSE>\n    <DATETIME>2026-11-03T09:00:00Z</DATETIME>\n    <HOST_LIST>\n      <HOST>\n        <ID>1</ID>\n        <IP>10.2.0.11</IP>\n        <TRACKING_METHOD>IP</TRACKING_METHOD>\n        <DNS><![CDATA[storefront-web]]></DNS>\n        <DETECTION_LIST>\n          <DETECTION>\n            <QID>38657</QID>\n            <TYPE>Confirmed</TYPE>\n            <SEVERITY>4</SEVERITY>\n            <STATUS>Active</STATUS>\n            <FIRST_FOUND_DATETIME>2026-09-24T09:00:00Z</FIRST_FOUND_DATETIME>\n            <LAST_FOUND_DATETIME>2026-11-03T09:00:00Z</LAST_FOUND_DATETIME>\n          </DETECTION>\n        </DETECTION_LIST>\n      </HOST>\n      <HOST>\n        <ID>2</ID>\n        <IP>10.2.0.24</IP>\n        <TRACKING_METHOD>IP</TRACKING_METHOD>\n        <DNS><![CDATA[order-service]]></DNS>\n        <DETECTION_LIST>\n          <DETECTION>\n            <QID>41102</QID>\n            <TYPE>Confirmed</TYPE>\n            <SEVERITY>5</SEVERITY>\n            <STATUS>Active</STATUS>\n            <FIRST_FOUND_DATETIME>2026-09-24T09:00:00Z</FIRST_FOUND_DATETIME>\n            <LAST_FOUND_DATETIME>2026-11-03T09:00:00Z</LAST_FOUND_DATETIME>\n          </DETECTION>\n        </DETECTION_LIST>\n      </HOST>\n    </HOST_LIST>\n  </RESPONSE>\n</HOST_LIST_VM_DETECTION_OUTPUT>\n"
+      }
     },
     {
-      "ID": 2,
-      "IP": "10.2.0.24",
-      "DNS": "order-service",
-      "DETECTION_LIST": [
-        {
-          "QID": 41102,
-          "CVE": "CVE-2026-0442",
-          "SEVERITY": 5,
-          "CVSS_BASE": "9.8",
-          "EXPLOIT_MATURITY": "wild",
-          "FIRST_FOUND_DATETIME": "2026-09-24T09:00:00Z",
-          "STATUS": "ACTIVE"
+      "request": {
+        "method": "GET",
+        "path": "/api/2.0/fo/knowledge_base/vuln/",
+        "query": {
+          "action": "list",
+          "details": "All",
+          "ids": "38657,41102"
         }
-      ]
+      },
+      "response": {
+        "status": 200,
+        "text": "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n<!DOCTYPE KNOWLEDGE_BASE_VULN_LIST_OUTPUT SYSTEM \"https://qualysapi.qualys.com/api/2.0/fo/knowledge_base/vuln/knowledge_base_vuln_list_output.dtd\">\n<KNOWLEDGE_BASE_VULN_LIST_OUTPUT>\n  <RESPONSE>\n    <DATETIME>2026-11-03T09:00:00Z</DATETIME>\n    <VULN_LIST>\n      <VULN>\n        <QID>38657</QID>\n        <VULN_TYPE>Vulnerability</VULN_TYPE>\n        <SEVERITY_LEVEL>4</SEVERITY_LEVEL>\n        <TITLE><![CDATA[Outdated TLS library on storefront-web]]></TITLE>\n        <CVE_LIST><CVE><ID><![CDATA[CVE-2025-9910]]></ID></CVE></CVE_LIST>\n        <THREAT_INTELLIGENCE>\n          <THREAT_INTEL id=\"2\"><![CDATA[Exploit_Public]]></THREAT_INTEL>\n        </THREAT_INTELLIGENCE>\n      </VULN>\n      <VULN>\n        <QID>41102</QID>\n        <VULN_TYPE>Vulnerability</VULN_TYPE>\n        <SEVERITY_LEVEL>5</SEVERITY_LEVEL>\n        <TITLE><![CDATA[Order service deserialisation]]></TITLE>\n        <CVE_LIST><CVE><ID><![CDATA[CVE-2026-0442]]></ID></CVE></CVE_LIST>\n        <THREAT_INTELLIGENCE>\n          <THREAT_INTEL id=\"2\"><![CDATA[Exploit_Public]]></THREAT_INTEL>\n          <THREAT_INTEL id=\"3\"><![CDATA[Active_Attacks]]></THREAT_INTEL>\n        </THREAT_INTELLIGENCE>\n      </VULN>\n    </VULN_LIST>\n  </RESPONSE>\n</KNOWLEDGE_BASE_VULN_LIST_OUTPUT>\n"
+      }
     }
   ]
 }

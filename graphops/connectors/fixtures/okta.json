@@ -1,116 +1,437 @@
 {
-  "users": [
+  "vendor": "Okta",
+  "documented_at": "Okta Management API: Users, Applications, Application Users, System Log",
+  "recorded_at": "2026-11-03T09:00:00Z",
+  "exchanges": [
     {
-      "id": "u1",
-      "status": "ACTIVE",
-      "profile": {
-        "login": "svc-deploy",
-        "email": "svc-deploy@example.invalid",
-        "firstName": "Deployment",
-        "lastName": "Service"
-      },
-      "appAssignments": [
-        {
-          "appId": "app1",
-          "scope": "GROUP",
-          "created": "2026-09-24T09:00:00Z",
-          "lastSignOn": "2026-11-03T04:00:00Z"
-        },
-        {
-          "appId": "app4",
-          "scope": "USER",
-          "created": "2026-09-24T09:00:00Z",
-          "lastSignOn": "2026-09-24T09:00:00Z"
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/users",
+        "query": {
+          "limit": "200"
         }
-      ]
-    },
-    {
-      "id": "u2",
-      "status": "ACTIVE",
-      "profile": {
-        "login": "support-desk",
-        "email": "support@example.invalid",
-        "firstName": "Support",
-        "lastName": "Desk"
       },
-      "appAssignments": [
-        {
-          "appId": "app4",
-          "scope": "USER",
-          "created": "2026-09-24T09:00:00Z",
-          "lastSignOn": "2026-09-24T09:00:00Z"
-        },
-        {
-          "appId": "app2",
-          "scope": "GROUP",
-          "created": "2026-09-24T09:00:00Z",
-          "lastSignOn": null
-        },
-        {
-          "appId": "app3",
-          "scope": "GROUP",
-          "created": "2026-09-24T09:00:00Z",
-          "lastSignOn": null
-        }
-      ]
+      "response": {
+        "status": 200,
+        "body": [
+          {
+            "id": "00u1svcdeploy00001",
+            "status": "ACTIVE",
+            "created": "2026-09-24T09:00:00Z",
+            "activated": "2026-09-24T09:00:00Z",
+            "lastLogin": null,
+            "type": {
+              "id": "oty1default0000001"
+            },
+            "profile": {
+              "login": "svc-deploy",
+              "email": "svc-deploy@example.invalid",
+              "firstName": "Deployment",
+              "lastName": "Service"
+            }
+          },
+          {
+            "id": "00u2support0000001",
+            "status": "ACTIVE",
+            "created": "2026-09-24T09:00:00Z",
+            "activated": "2026-09-24T09:00:00Z",
+            "lastLogin": null,
+            "type": {
+              "id": "oty1default0000001"
+            },
+            "profile": {
+              "login": "support-desk",
+              "email": "support-desk@example.invalid",
+              "firstName": "Support",
+              "lastName": "Desk"
+            }
+          },
+          {
+            "id": "00u3svcbackup00001",
+            "status": "ACTIVE",
+            "created": "2026-09-24T09:00:00Z",
+            "activated": "2026-09-24T09:00:00Z",
+            "lastLogin": null,
+            "type": {
+              "id": "oty1default0000001"
+            },
+            "profile": {
+              "login": "svc-backup",
+              "email": "svc-backup@example.invalid",
+              "firstName": "Backup",
+              "lastName": "Service"
+            }
+          },
+          {
+            "id": "00u4contractor0001",
+            "status": "SUSPENDED",
+            "created": "2026-09-24T09:00:00Z",
+            "activated": "2026-09-24T09:00:00Z",
+            "lastLogin": null,
+            "type": {
+              "id": "oty1default0000001"
+            },
+            "profile": {
+              "login": "former-contractor",
+              "email": "former-contractor@example.invalid",
+              "firstName": "Former",
+              "lastName": "Contractor"
+            }
+          }
+        ]
+      }
     },
     {
-      "id": "u3",
-      "status": "ACTIVE",
-      "profile": {
-        "login": "svc-backup",
-        "email": "svc-backup@example.invalid",
-        "firstName": "Backup",
-        "lastName": "Service"
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/apps",
+        "query": {
+          "limit": "200"
+        }
       },
-      "appAssignments": [
-        {
-          "appId": "app1",
-          "scope": "USER",
-          "created": "2026-09-24T09:00:00Z",
-          "lastSignOn": "2026-09-24T09:00:00Z"
-        }
-      ]
+      "response": {
+        "status": 200,
+        "body": [
+          {
+            "id": "0oa1backups0000001",
+            "name": "bookmark",
+            "label": "s3://nightly-backups",
+            "status": "ACTIVE",
+            "signOnMode": "BOOKMARK",
+            "created": "2026-09-24T09:00:00Z"
+          },
+          {
+            "id": "0oa2billing0000001",
+            "name": "bookmark",
+            "label": "billing-database",
+            "status": "ACTIVE",
+            "signOnMode": "BOOKMARK",
+            "created": "2026-09-24T09:00:00Z"
+          },
+          {
+            "id": "0oa3hrdb0000000001",
+            "name": "bookmark",
+            "label": "hr-database",
+            "status": "ACTIVE",
+            "signOnMode": "BOOKMARK",
+            "created": "2026-09-24T09:00:00Z"
+          },
+          {
+            "id": "0oa4iam00000000001",
+            "name": "bookmark",
+            "label": "iam",
+            "status": "ACTIVE",
+            "signOnMode": "BOOKMARK",
+            "created": "2026-09-24T09:00:00Z"
+          }
+        ]
+      }
     },
     {
-      "id": "u4",
-      "status": "SUSPENDED",
-      "profile": {
-        "login": "former-contractor",
-        "email": "contractor@example.invalid",
-        "firstName": "Former",
-        "lastName": "Contractor"
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/apps/0oa1backups0000001/users",
+        "query": {
+          "limit": "500"
+        }
       },
-      "appAssignments": [
-        {
-          "appId": "app2",
-          "scope": "USER",
-          "created": "2026-09-24T09:00:00Z",
-          "lastSignOn": null
+      "response": {
+        "status": 200,
+        "body": [
+          {
+            "id": "00u1svcdeploy00001",
+            "externalId": null,
+            "created": "2026-09-24T09:00:00Z",
+            "lastUpdated": "2026-09-24T09:00:00Z",
+            "scope": "GROUP",
+            "status": "ACTIVE",
+            "statusChanged": "2026-09-24T09:00:00Z",
+            "syncState": "DISABLED",
+            "credentials": {
+              "userName": "svc-deploy"
+            },
+            "profile": {}
+          },
+          {
+            "id": "00u3svcbackup00001",
+            "externalId": null,
+            "created": "2026-09-24T09:00:00Z",
+            "lastUpdated": "2026-09-24T09:00:00Z",
+            "scope": "USER",
+            "status": "ACTIVE",
+            "statusChanged": "2026-09-24T09:00:00Z",
+            "syncState": "DISABLED",
+            "credentials": {
+              "userName": "svc-backup"
+            },
+            "profile": {}
+          }
+        ]
+      }
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/apps/0oa2billing0000001/users",
+        "query": {
+          "limit": "500"
         }
-      ]
-    }
-  ],
-  "apps": [
-    {
-      "id": "app1",
-      "label": "s3://nightly-backups",
-      "status": "ACTIVE"
+      },
+      "response": {
+        "status": 200,
+        "body": [
+          {
+            "id": "00u2support0000001",
+            "externalId": null,
+            "created": "2026-09-24T09:00:00Z",
+            "lastUpdated": "2026-09-24T09:00:00Z",
+            "scope": "GROUP",
+            "status": "ACTIVE",
+            "statusChanged": "2026-09-24T09:00:00Z",
+            "syncState": "DISABLED",
+            "credentials": {
+              "userName": "support-desk"
+            },
+            "profile": {}
+          },
+          {
+            "id": "00u4contractor0001",
+            "externalId": null,
+            "created": "2026-09-24T09:00:00Z",
+            "lastUpdated": "2026-09-24T09:00:00Z",
+            "scope": "USER",
+            "status": "ACTIVE",
+            "statusChanged": "2026-09-24T09:00:00Z",
+            "syncState": "DISABLED",
+            "credentials": {
+              "userName": "former-contractor"
+            },
+            "profile": {}
+          }
+        ]
+      }
     },
     {
-      "id": "app2",
-      "label": "billing-database",
-      "status": "ACTIVE"
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/apps/0oa3hrdb0000000001/users",
+        "query": {
+          "limit": "500"
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": [
+          {
+            "id": "00u2support0000001",
+            "externalId": null,
+            "created": "2026-09-24T09:00:00Z",
+            "lastUpdated": "2026-09-24T09:00:00Z",
+            "scope": "GROUP",
+            "status": "ACTIVE",
+            "statusChanged": "2026-09-24T09:00:00Z",
+            "syncState": "DISABLED",
+            "credentials": {
+              "userName": "support-desk"
+            },
+            "profile": {}
+          }
+        ]
+      }
     },
     {
-      "id": "app3",
-      "label": "hr-database",
-      "status": "ACTIVE"
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/apps/0oa4iam00000000001/users",
+        "query": {
+          "limit": "500"
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": [
+          {
+            "id": "00u1svcdeploy00001",
+            "externalId": null,
+            "created": "2026-09-24T09:00:00Z",
+            "lastUpdated": "2026-09-24T09:00:00Z",
+            "scope": "USER",
+            "status": "ACTIVE",
+            "statusChanged": "2026-09-24T09:00:00Z",
+            "syncState": "DISABLED",
+            "credentials": {
+              "userName": "svc-deploy"
+            },
+            "profile": {}
+          },
+          {
+            "id": "00u2support0000001",
+            "externalId": null,
+            "created": "2026-09-24T09:00:00Z",
+            "lastUpdated": "2026-09-24T09:00:00Z",
+            "scope": "USER",
+            "status": "ACTIVE",
+            "statusChanged": "2026-09-24T09:00:00Z",
+            "syncState": "DISABLED",
+            "credentials": {
+              "userName": "support-desk"
+            },
+            "profile": {}
+          }
+        ]
+      }
     },
     {
-      "id": "app4",
-      "label": "iam",
-      "status": "ACTIVE"
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/logs",
+        "query": {
+          "filter": "eventType eq \"user.authentication.sso\"",
+          "since": "2026-08-05T09:00:00.000Z",
+          "limit": "1000"
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": [
+          {
+            "uuid": "a1b2c3d4-0000-4000-8000-000000000000",
+            "published": "2026-11-03T04:00:00Z",
+            "eventType": "user.authentication.sso",
+            "version": "0",
+            "displayMessage": "User single sign on to app",
+            "severity": "INFO",
+            "actor": {
+              "id": "00u1svcdeploy00001",
+              "type": "User",
+              "alternateId": "svc-deploy@example.invalid",
+              "displayName": "svc-deploy"
+            },
+            "client": {
+              "ipAddress": "10.0.0.10"
+            },
+            "outcome": {
+              "result": "SUCCESS"
+            },
+            "target": [
+              {
+                "id": "0oa1backups0000001",
+                "type": "AppInstance",
+                "alternateId": "s3://nightly-backups",
+                "displayName": "s3://nightly-backups"
+              },
+              {
+                "id": "00u1svcdeploy00001",
+                "type": "AppUser",
+                "alternateId": "svc-deploy",
+                "displayName": "svc-deploy"
+              }
+            ]
+          },
+          {
+            "uuid": "a1b2c3d4-0000-4000-8000-000000000001",
+            "published": "2026-09-24T09:00:00Z",
+            "eventType": "user.authentication.sso",
+            "version": "0",
+            "displayMessage": "User single sign on to app",
+            "severity": "INFO",
+            "actor": {
+              "id": "00u1svcdeploy00001",
+              "type": "User",
+              "alternateId": "svc-deploy@example.invalid",
+              "displayName": "svc-deploy"
+            },
+            "client": {
+              "ipAddress": "10.0.0.11"
+            },
+            "outcome": {
+              "result": "SUCCESS"
+            },
+            "target": [
+              {
+                "id": "0oa4iam00000000001",
+                "type": "AppInstance",
+                "alternateId": "iam",
+                "displayName": "iam"
+              },
+              {
+                "id": "00u1svcdeploy00001",
+                "type": "AppUser",
+                "alternateId": "svc-deploy",
+                "displayName": "svc-deploy"
+              }
+            ]
+          },
+          {
+            "uuid": "a1b2c3d4-0000-4000-8000-000000000002",
+            "published": "2026-09-24T09:00:00Z",
+            "eventType": "user.authentication.sso",
+            "version": "0",
+            "displayMessage": "User single sign on to app",
+            "severity": "INFO",
+            "actor": {
+              "id": "00u2support0000001",
+              "type": "User",
+              "alternateId": "support-desk@example.invalid",
+              "displayName": "support-desk"
+            },
+            "client": {
+              "ipAddress": "10.0.0.12"
+            },
+            "outcome": {
+              "result": "SUCCESS"
+            },
+            "target": [
+              {
+                "id": "0oa4iam00000000001",
+                "type": "AppInstance",
+                "alternateId": "iam",
+                "displayName": "iam"
+              },
+              {
+                "id": "00u2support0000001",
+                "type": "AppUser",
+                "alternateId": "support-desk",
+                "displayName": "support-desk"
+              }
+            ]
+          },
+          {
+            "uuid": "a1b2c3d4-0000-4000-8000-000000000003",
+            "published": "2026-09-24T09:00:00Z",
+            "eventType": "user.authentication.sso",
+            "version": "0",
+            "displayMessage": "User single sign on to app",
+            "severity": "INFO",
+            "actor": {
+              "id": "00u3svcbackup00001",
+              "type": "User",
+              "alternateId": "svc-backup@example.invalid",
+              "displayName": "svc-backup"
+            },
+            "client": {
+              "ipAddress": "10.0.0.13"
+            },
+            "outcome": {
+              "result": "SUCCESS"
+            },
+            "target": [
+              {
+                "id": "0oa1backups0000001",
+                "type": "AppInstance",
+                "alternateId": "s3://nightly-backups",
+                "displayName": "s3://nightly-backups"
+              },
+              {
+                "id": "00u3svcbackup00001",
+                "type": "AppUser",
+                "alternateId": "svc-backup",
+                "displayName": "svc-backup"
+              }
+            ]
+          }
+        ]
+      }
     }
   ]
 }

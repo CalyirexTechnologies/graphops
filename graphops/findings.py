@@ -179,8 +179,9 @@ def derive(estate) -> list[dict]:
         if status == 'never':
             title = '%s may reach %s and never has' % (who, what)
         elif status == 'idle':
-            title = ('%s may reach %s and has not used it in %d days'
-                     % (who, what, grant.get('idle_days') or 0))
+            title = ('%s may reach %s and has not used it in %s%d days'
+                     % (who, what, 'at least ' if grant.get('idle_at_least') else '',
+                        grant.get('idle_days') or 0))
         else:
             title = ('%s holds %s, and nothing reports whether it is used'
                      % (who, what))
@@ -205,7 +206,8 @@ def derive(estate) -> list[dict]:
             'target': what if reaches else None,
             'routes': int(grant.get('routes_through') or 0),
             'grant': {key: grant.get(key) for key in
-                      ('status', 'permission', 'via', 'last_used', 'idle_days')},
+                      ('status', 'permission', 'via', 'last_used', 'idle_days',
+                       'idle_at_least')},
             'remediation': remediation,
         })
 

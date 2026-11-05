@@ -28,19 +28,30 @@ functions where a core module needs one.
 2. Declare `key`, `vendor`, `product`, `category`, `required_credentials` and
    `api_reference`. The API reference is checked by a test: a reviewer has to
    be able to compare your payload shape against the vendor's own docs.
-3. Write `transform` against the vendor's documented response shape.
-4. Add a builder to `make_fixtures.py` and run `make fixtures`. Do not
-   hand-write a fixture file: CI regenerates them and diffs, so a fixture
-   nobody can regenerate fails the build.
-5. Register the class in `registry.CONNECTORS`.
+3. Write `collect` with `self.request`, calling the vendor's documented
+   endpoints in the documented order, with the documented authentication.
+   Put any vendor host in `defaults` so regional and national clouds can
+   override it. The same `collect` runs in replay and live mode; only the
+   transport differs.
+4. Write `transform` against the documented response shape, which you check
+   against the vendor's documentation, not against your own recording.
+5. Add a builder to `make_fixtures.py` that records the documented response
+   to each call `collect` makes, and run `make fixtures`. Do not hand-write a
+   fixture file: CI regenerates them and diffs, so a fixture nobody can
+   regenerate fails the build.
+6. Add the vendor's documented authentication to `SECRETS` in
+   `tests/test_live_paths.py`, so the live path runs over real HTTP.
+7. Register the class in `registry.CONNECTORS`.
 
 Your fixture must fit the existing story rather than stand alone. The whole
 point of the architecture is that the merged graph contains routes no single
 source could show, and a fixture describing an unrelated company proves
 nothing.
 
-Write `fetch_live` properly or raise `NotImplementedError` with a reason. Do
-not write a live path that silently returns fixture data.
+A recording that fits your parser proves only that the two agree with each
+other. Until 5 November 2026 most of these connectors' recordings did, and
+their live paths were wrong against the real APIs. Check the shape against
+the vendor.
 
 ## Adding a route
 

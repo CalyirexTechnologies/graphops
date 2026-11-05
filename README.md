@@ -126,28 +126,50 @@ idempotently on a caller-supplied key.
 |---|---|---|---|
 | SIEM | Splunk Enterprise Security | in | Perimeter requests and which rules fired |
 | SIEM | Microsoft Sentinel | in | Incidents, and the address-to-account links in them |
-| EDR | CrowdStrike Falcon | in | Detections, and which account a host had in memory |
-| Identity | Okta | in | Users, apps, **entitlements and whether they were used** |
+| EDR | CrowdStrike Falcon | in | Alerts, and which account a host had in memory |
+| Identity | Okta | in | Assignments, and **from the System Log, whether each was used** |
 | Identity | Microsoft Entra ID | in | Directory roles and service principals |
 | Cloud | AWS CloudTrail | in | Role assumption and resource reads |
-| Vulnerability | Qualys VMDR | in | Host detections, weighted by exploit maturity |
-| Vulnerability | Tenable.io | in | The same, nested the other way round |
+| Vulnerability | Qualys VMDR | in | Host detections joined to the KnowledgeBase for CVEs and exploit intel |
+| Vulnerability | Tenable Vulnerability Management | in | The same, from the vulnerability export API |
 | CMDB | ServiceNow | in | **The only real source of a crown-jewel classification** |
 | Ticketing | Jira | out | Opens an issue, deduplicated by label |
 | Chat | Slack | out | Posts to a channel |
 | Chat | Microsoft Teams | out | Posts an adaptive card |
 | On-call | PagerDuty | out | Pages, but only for critical findings |
 
-Every inbound connector ships a committed fixture, so the whole pipeline runs
-with **no vendor account, no API key and no network**. That is the default
-mode and it is how the tests run. Live mode issues the real call and refuses
-to start without its credentials rather than falling back to the fixture: a
-connector quietly serving yesterday's data on an expired token is worse than
-one that fails loudly.
+**Replay and live run the same code.** Every connector makes the same calls in
+both modes, and only the transport differs. Live sends real HTTP. Replay
+answers from a committed recording of the vendor's documented responses, so
+the whole pipeline runs with **no vendor account, no API key and no network**,
+and every replay exercises the live code. A request the recording does not hold
+is an error rather than an empty answer, so the code and its recording cannot
+drift apart quietly. Live mode refuses to start without its credentials rather
+than falling back to the recording.
 
-The fixtures are synthetic records in each vendor's published response shape,
-not captures from anyone's tenant. Addresses come from the RFC 5737
-documentation ranges and route nowhere.
+`tests/test_live_paths.py` runs every live path over real HTTP against a local
+server that answers the recordings and checks each vendor's documented
+authentication: SSWS for Okta, client-credential token exchanges for
+CrowdStrike and Microsoft, Basic with `X-Requested-With` for Qualys, and
+`X-ApiKeys` for Tenable. The live graph must equal the replay graph exactly.
+CloudTrail is read from the log files a trail delivers to S3, after an
+`aws s3 sync` of the bucket, so its live path keeps AWS signing in the AWS CLI.
+
+**This was not true until 5 November 2026, and the gap was large.** Replay used
+to hand each parser a fixture shaped to fit it, and the live code was separate
+and had never run. Checked against each vendor's documentation, most of it was
+wrong: CrowdStrike called the Detects API, which was decommissioned on 30
+September 2025; Okta read a per-user `appAssignments[].lastSignOn` that no Okta
+endpoint returns; Tenable's workbench has neither affected assets nor CVEs;
+Sentinel's entities are a separate call; Splunk read a job list as results;
+Qualys asked an XML API for JSON. Three connectors never exchanged their client
+credentials for a token at all. All of it is rewritten against the documented
+APIs, each cited on its connector as `api_reference`.
+
+What this does not prove is that a real tenant answers exactly as documented.
+The recordings are synthetic, checked against the documentation rather than
+captured from anyone's tenant. Addresses come from the RFC 5737 documentation
+ranges and route nowhere.
 
 ---
 

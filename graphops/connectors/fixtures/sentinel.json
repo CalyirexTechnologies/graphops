@@ -1,47 +1,169 @@
 {
-  "value": [
+  "vendor": "Microsoft Sentinel",
+  "documented_at": "SecurityInsights REST API 2023-02-01",
+  "recorded_at": "2026-11-03T09:00:00Z",
+  "exchanges": [
     {
-      "id": "/subscriptions/0000/incidents/1",
-      "name": "inc-1",
-      "type": "Microsoft.SecurityInsights/Incidents",
-      "properties": {
-        "title": "repeated-auth-failure",
-        "severity": "Medium",
-        "status": "Active",
-        "createdTimeUtc": "2026-10-28T09:00:00Z",
-        "incidentNumber": 1041,
-        "relatedEntities": [
-          {
-            "kind": "Ip",
-            "value": "192.0.2.133"
-          },
-          {
-            "kind": "Account",
-            "value": "support-desk"
-          }
-        ]
+      "request": {
+        "method": "POST",
+        "path": "/replay/oauth2/v2.0/token"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "token_type": "Bearer",
+          "expires_in": 3599,
+          "ext_expires_in": 3599,
+          "access_token": "replay-token"
+        }
       }
     },
     {
-      "id": "/subscriptions/0000/incidents/2",
-      "name": "inc-2",
-      "type": "Microsoft.SecurityInsights/Incidents",
-      "properties": {
-        "title": "anomalous-role-assumption",
-        "severity": "High",
-        "status": "New",
-        "createdTimeUtc": "2026-11-03T04:00:00Z",
-        "incidentNumber": 1042,
-        "relatedEntities": [
-          {
-            "kind": "Ip",
-            "value": "192.0.2.41"
-          },
-          {
-            "kind": "Account",
-            "value": "svc-deploy"
-          }
-        ]
+      "request": {
+        "method": "GET",
+        "path": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/soc/providers/Microsoft.OperationalInsights/workspaces/sentinel-ws/providers/Microsoft.SecurityInsights/incidents",
+        "query": {
+          "api-version": "2023-02-01"
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "value": [
+            {
+              "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/soc/providers/Microsoft.OperationalInsights/workspaces/sentinel-ws/providers/Microsoft.SecurityInsights/incidents/6f1c2a90-1041-4a8e-9c1e-000000001041",
+              "name": "6f1c2a90-1041-4a8e-9c1e-000000001041",
+              "type": "Microsoft.SecurityInsights/Incidents",
+              "etag": "\"0300bf09-0000-0000-0000-5c37296e0000\"",
+              "properties": {
+                "title": "repeated-auth-failure",
+                "severity": "Medium",
+                "status": "Active",
+                "createdTimeUtc": "2026-10-28T09:00:00Z",
+                "incidentNumber": 1041,
+                "additionalData": {
+                  "alertsCount": 1,
+                  "alertProductNames": [
+                    "Azure Sentinel"
+                  ]
+                }
+              }
+            },
+            {
+              "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/soc/providers/Microsoft.OperationalInsights/workspaces/sentinel-ws/providers/Microsoft.SecurityInsights/incidents/6f1c2a90-1042-4a8e-9c1e-000000001042",
+              "name": "6f1c2a90-1042-4a8e-9c1e-000000001042",
+              "type": "Microsoft.SecurityInsights/Incidents",
+              "etag": "\"0300bf09-0000-0000-0000-5c37296e0000\"",
+              "properties": {
+                "title": "anomalous-role-assumption",
+                "severity": "High",
+                "status": "New",
+                "createdTimeUtc": "2026-11-03T04:00:00Z",
+                "incidentNumber": 1042,
+                "additionalData": {
+                  "alertsCount": 1,
+                  "alertProductNames": [
+                    "Azure Sentinel"
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/soc/providers/Microsoft.OperationalInsights/workspaces/sentinel-ws/providers/Microsoft.SecurityInsights/incidents/6f1c2a90-1041-4a8e-9c1e-000000001041/entities",
+        "query": {
+          "api-version": "2023-02-01"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "entities": [
+            {
+              "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/soc/providers/Microsoft.OperationalInsights/workspaces/sentinel-ws/providers/Microsoft.SecurityInsights/Entities/00000000-0000-0000-0000-000000000000",
+              "name": "00000000-0000-0000-0000-000000000000",
+              "type": "Microsoft.SecurityInsights/Entities",
+              "kind": "Ip",
+              "properties": {
+                "address": "192.0.2.133",
+                "friendlyName": "192.0.2.133"
+              }
+            },
+            {
+              "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/soc/providers/Microsoft.OperationalInsights/workspaces/sentinel-ws/providers/Microsoft.SecurityInsights/Entities/00000000-0000-0000-0000-000000000001",
+              "name": "00000000-0000-0000-0000-000000000001",
+              "type": "Microsoft.SecurityInsights/Entities",
+              "kind": "Account",
+              "properties": {
+                "accountName": "support-desk",
+                "friendlyName": "support-desk"
+              }
+            }
+          ],
+          "metaData": [
+            {
+              "entityKind": "Ip",
+              "count": 1
+            },
+            {
+              "entityKind": "Account",
+              "count": 1
+            }
+          ]
+        }
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/soc/providers/Microsoft.OperationalInsights/workspaces/sentinel-ws/providers/Microsoft.SecurityInsights/incidents/6f1c2a90-1042-4a8e-9c1e-000000001042/entities",
+        "query": {
+          "api-version": "2023-02-01"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "entities": [
+            {
+              "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/soc/providers/Microsoft.OperationalInsights/workspaces/sentinel-ws/providers/Microsoft.SecurityInsights/Entities/00000000-0000-0000-0000-000000000010",
+              "name": "00000000-0000-0000-0000-000000000010",
+              "type": "Microsoft.SecurityInsights/Entities",
+              "kind": "Ip",
+              "properties": {
+                "address": "192.0.2.41",
+                "friendlyName": "192.0.2.41"
+              }
+            },
+            {
+              "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/soc/providers/Microsoft.OperationalInsights/workspaces/sentinel-ws/providers/Microsoft.SecurityInsights/Entities/00000000-0000-0000-0000-000000000011",
+              "name": "00000000-0000-0000-0000-000000000011",
+              "type": "Microsoft.SecurityInsights/Entities",
+              "kind": "Account",
+              "properties": {
+                "accountName": "svc-deploy",
+                "friendlyName": "svc-deploy"
+              }
+            }
+          ],
+          "metaData": [
+            {
+              "entityKind": "Ip",
+              "count": 1
+            },
+            {
+              "entityKind": "Account",
+              "count": 1
+            }
+          ]
+        }
       }
     }
   ]
