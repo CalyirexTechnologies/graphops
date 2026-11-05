@@ -2,7 +2,7 @@
 
 ```bash
 make install     # venv with the API, Neo4j driver and test tooling
-make test        # 358 tests
+make test        # 383 tests
 make lint        # ruff
 ```
 

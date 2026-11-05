@@ -44,13 +44,13 @@ make install                      # venv + fastapi + neo4j driver + pytest
 export GRAPHOPS_SIGNING_KEY=$(python3 -m graphops.cli keygen)
 .venv/bin/python -m graphops.cli bootstrap --slug acme --email you@acme.example
 make serve                        # console at http://127.0.0.1:8000/
-make test                         # 358 tests
+make test                         # 383 tests
 ```
 
 `bootstrap` prints a generated owner password once. Sign in to the console
-with `acme`, that email and that password. The console has ten screens
-(overview, exposure, node detail, access, findings, connectors, compliance,
-admin, profile and sign-in) and every number on them comes from the API:
+with `acme`, that email and that password. The console has eleven screens
+(overview, graph, exposure, node detail, access, findings, connectors,
+compliance, admin, profile and sign-in) and every number on them comes from the API:
 nothing is sample data. It is plain scripts with no build step, served under
 a content security policy that allows no inline script and no eval, and it
 shows each role exactly what that role's permissions allow. An auditor sees
@@ -213,7 +213,7 @@ fed a node.
 | **Authorisation** | 7 roles, 22 permissions, a deny-by-default matrix held as data so the tests can assert properties over all of it. |
 | **Graph-aware redaction** | `crown:reveal` is its own permission. Without it a crown jewel reads as `crown-jewel-7f3a`: stable per tenant, HMAC-derived, counts preserved. |
 | **Audit** | Append-only and hash-chained. Editing or deleting an entry is detected and the first damaged row is named. Secrets scrubbed before the write. |
-| **REST API** | 32 operations, OpenAPI at `/openapi.json`, Swagger at `/docs`. |
+| **REST API** | 33 operations, OpenAPI at `/openapi.json`, Swagger at `/docs`. |
 | **Exports** | STIX 2.1, SARIF 2.1.0, OSCAL assessment results, CSV. |
 | **Compliance** | SOC 2, ISO 27001 and CIS controls assessed from graph evidence. |
 | **Observability** | Prometheus metrics, structured logs, separate liveness and readiness. |
@@ -293,7 +293,7 @@ endpoints, so a route added next month is covered the day it is written.
 Enumerating endpoints by hand is how an unauthenticated route reaches
 production with a green suite.
 
-**358 tests, 84% statement coverage.**
+**383 tests, 85% statement coverage.**
 
 ---
 
@@ -401,11 +401,11 @@ graphops/
   observability/      Prometheus metrics
   store/              SQLite with forward-only migrations
 cypher/               the six queries as standalone files
-tests/                358 tests
+tests/                383 tests
 viewer/index.html     the picture, no build step and no dependencies
 ```
 
-53 Python files, about 10,100 lines, plus 3,800 lines of tests and 2,350
+53 Python files, about 10,200 lines, plus 4,000 lines of tests and 2,700
 lines of console JavaScript, CSS and HTML.
 
 ---

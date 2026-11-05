@@ -172,7 +172,7 @@
     <div class="row"><span class="n">01</span><div><h3>The problem</h3><p>Four records of one attack, held by four different tools.</p></div></div>
     <div class="row"><span class="n">02</span><div><h3>The graph</h3><p>Nine sources joined into one estate.</p></div></div>
     <div class="row"><span class="n">03</span><div><h3>Five questions</h3><p>Routes, blast radius, new reach, unused access and what to cut first.</p></div></div>
-    <div class="row"><span class="n">04</span><div><h3>The product</h3><p>The console, the roles and what each role may see.</p></div></div>
+    <div class="row"><span class="n">04</span><div><h3>The product</h3><p>The graph, the console and what each role may see.</p></div></div>
     <div class="row"><span class="n">05</span><div><h3>Evidence</h3><p>A second engine, a benchmark, the tests and what is not real.</p></div></div>
   </div>
 </section>
@@ -214,7 +214,7 @@
   <h2>What the brief asks for</h2>
   <table style="margin-top:30px">
     <tr><th style="width:34%">The brief asks for</th><th>Answered by</th><th class="r" style="width:10%">Slide</th></tr>
-    <tr><td>A knowledge graph from security telemetry</td><td class="muted">9 inbound sources, 7 node kinds, 7 edge kinds, resolved into one estate</td><td class="r">07</td></tr>
+    <tr><td>A knowledge graph from security telemetry</td><td class="muted">9 inbound sources, 7 node kinds, 7 edge kinds, resolved into one estate and drawn whole</td><td class="r">07, 16</td></tr>
     <tr><td>Attack paths before they are used, with choke points</td><td class="muted">Every route to a crown jewel, ranked by attacker effort with Dijkstra</td><td class="r">10</td></tr>
     <tr><td>Blast radius at one, two and three hops</td><td class="muted">A bounded walk from any compromised system</td><td class="r">11</td></tr>
     <tr><td>Anomalies from structure, not rules</td><td class="muted">The graph now against the graph before the window, plus Louvain segments</td><td class="r">12</td></tr>
@@ -406,13 +406,27 @@
 <section class="slide divider">
   <div class="big">04</div>
   <h1>The product</h1>
-  <p class="sub">The console, the roles and what each role may see.</p>
+  <p class="sub">The graph, the console and what each role may see.</p>
   <div class="foot"><div class="dots"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div><span class="capg">Section 04 of 05</span></div>
 </section>
 
 <!-- 16 -->
 <section class="slide">
   <div class="top"><span>04 · The product</span><span>16</span></div>
+  <h2>The whole graph, in the product</h2>
+  <div style="display:grid;grid-template-columns:770px 1fr;gap:36px;margin-top:22px" class="grow">
+    <figure><img src="shots/console-graph.png" alt="The Graph screen, with every system in its trust zone, every relationship drawn and the routes to crown jewels lit"></figure>
+    <div style="display:flex;flex-direction:column;gap:24px">
+      <div><svg class="ic" style="width:24px;height:24px;color:var(--red);display:block;margin-bottom:10px"><use href="#i-graph"/></svg><h3>Every system, every relationship</h3><p class="note">The 35 systems and 47 relationships the nine sources reported, each in its trust zone, left to right the way an attacker travels.</p></div>
+      <div><svg class="ic" style="width:24px;height:24px;color:var(--red);display:block;margin-bottom:10px"><use href="#i-route"/></svg><h3>Any answer lights up on it</h3><p class="note">Routes to crown jewels with the cheapest thickest, blast radius from any system, what is new in 24 hours, and unused access.</p></div>
+      <div><svg class="ic" style="width:24px;height:24px;color:var(--red);display:block;margin-bottom:10px"><use href="#i-lock"/></svg><h3>The same graph for every role</h3><p class="note">An auditor sees it whole, with crown jewels as pseudonyms that still line up with every route.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 17 -->
+<section class="slide">
+  <div class="top"><span>04 · The product</span><span>17</span></div>
   <h2>One screen per question</h2>
   <div style="display:grid;grid-template-columns:1fr 330px;gap:40px;margin-top:26px" class="grow">
     <figure><img src="shots/console-exposure.png" alt="The exposure screen with the route map, the routes and the ranked fixes"></figure>
@@ -424,9 +438,9 @@
   </div>
 </section>
 
-<!-- 17 -->
+<!-- 18 -->
 <section class="slide">
-  <div class="top"><span>04 · The product</span><span>17</span></div>
+  <div class="top"><span>04 · The product</span><span>18</span></div>
   <h2>Who may see which system</h2>
   <p class="lead">The map of how to reach regulated data is itself a target. Seeing the name at the end of a route is a permission of its own, <code>crown:reveal</code>.</p>
   <div class="blocks c2" style="margin-top:34px">
@@ -451,13 +465,13 @@
   <div class="strip bottom">
     <div><b>7</b><span>roles, deny by default</span></div>
     <div><b>22</b><span>permissions</span></div>
-    <div><b>32</b><span>API operations, each one guarded</span></div>
+    <div><b>33</b><span>API operations, each one guarded</span></div>
     <div><b>4</b><span>export formats, STIX, SARIF, OSCAL, CSV</span></div>
     <div><b>1</b><span>hash-chained audit log</span></div>
   </div>
 </section>
 
-<!-- 18 divider 05 -->
+<!-- 19 divider 05 -->
 <section class="slide divider">
   <div class="big">05</div>
   <h1>Evidence</h1>
@@ -465,9 +479,9 @@
   <div class="foot"><div class="dots"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></div><span class="capg">Section 05 of 05</span></div>
 </section>
 
-<!-- 19 -->
+<!-- 20 -->
 <section class="slide">
-  <div class="top"><span>05 · Evidence</span><span>19</span></div>
+  <div class="top"><span>05 · Evidence</span><span>20</span></div>
   <h2>Two engines, one answer</h2>
   <p class="lead">The same graph is loaded into Neo4j Community and asked the same questions in plain Cypher, with no GDS and no APOC.</p>
   <table style="margin-top:26px">
@@ -481,15 +495,15 @@
   <p class="note bottom">On its first run Cypher found 13 routes. Two nodes were joined by both a grant and an observed use, and Cypher walked each one. That is one route through the estate, and the Cypher was corrected.</p>
 </section>
 
-<!-- 20 -->
+<!-- 21 -->
 <section class="slide">
-  <div class="top"><span>05 · Evidence</span><span>20</span></div>
+  <div class="top"><span>05 · Evidence</span><span>21</span></div>
   <h2>At scale, and under test</h2>
   <div class="nums c4">
     <div class="num"><b>72,967</b><span>nodes in the large benchmark estate</span></div>
     <div class="num"><b>2.06s</b><span>to rank every cut on it</span></div>
-    <div class="num"><b>358</b><span>tests</span></div>
-    <div class="num"><b>84%</b><span>statement coverage</span></div>
+    <div class="num"><b>383</b><span>tests</span></div>
+    <div class="num"><b>85%</b><span>statement coverage</span></div>
   </div>
   <table style="margin-top:44px">
     <tr><th>Estate</th><th class="r">Exposure</th><th class="r">Blast radius</th><th class="r">PageRank</th><th class="r">Louvain</th><th class="r">Containment</th></tr>
@@ -499,9 +513,9 @@
   <p class="note bottom">From <code>python3 -m graphops.bench</code>, a fixed seed, one laptop, 581 MB peak. Cost follows how dense the perimeter is and how deep the search goes more than how many nodes there are. The first run found containment taking 29.6s on the large estate, and that was fixed before any number here was taken.</p>
 </section>
 
-<!-- 21 -->
+<!-- 22 -->
 <section class="slide">
-  <div class="top"><span>05 · Evidence</span><span>21</span></div>
+  <div class="top"><span>05 · Evidence</span><span>22</span></div>
   <h2>What is real, and what is not</h2>
   <div class="blocks c2" style="margin-top:34px">
     <div class="block" style="padding-right:36px">
@@ -525,9 +539,9 @@
   </div>
 </section>
 
-<!-- 22 closing -->
+<!-- 23 closing -->
 <section class="slide closing">
-  <div class="top" style="color:#fff;opacity:.85"><span>GraphOps</span><span>22</span></div>
+  <div class="top" style="color:#fff;opacity:.85"><span>GraphOps</span><span>23</span></div>
   <h1>What comes next</h1>
   <div class="blocks c4" style="margin-top:56px">
     <div class="block"><svg class="ic"><use href="#i-plus"/></svg><h3>A real tenant</h3><p>The live paths, run against a customer's own accounts.</p></div>
